@@ -23,12 +23,20 @@ so logging in again always updates it for both.
 
 ## Choosing which key a command uses
 
-Every command that talks to the API (`charges create`, `sandbox trigger`/
-`listen`, `logs`) accepts `--env test` or `--env live`:
+Every command that talks to the API (`charges create`, `sandbox trigger`,
+`listen`, `logs`, `webhooks`) accepts `--env test` or `--env live`:
 
 ```bash
 klap listen --forward-to http://localhost:3000/webhooks --env live
+klap charges create --amount 10 --accept USDC:base --expires-in 3600 --env test
+klap webhooks list --env live
+klap logs --tail --env test
 ```
+
+`klap fixtures charge` also accepts `--env`, but it's unrelated to
+credentials — no login is required at all for `fixtures`. It only
+changes the `environment` field (and the `checkoutUrl` domain) on the
+printed JSON. See [Fixtures](/fixtures).
 
 - **Only one key configured** — `--env` is optional, that key is used
   automatically.
@@ -41,9 +49,15 @@ klap listen --forward-to http://localhost:3000/webhooks --env live
 
 ## Removing credentials
 
-`klap logout` removes the whole file. `klap logout --env test` (or
-`--env live`) removes just that one key, keeping the other and `baseUrl`
-intact.
+```bash
+klap logout                # remove everything — both keys and the base URL
+klap logout --env test     # remove just the test key, keep live + baseUrl
+klap logout --env live     # remove just the live key, keep test + baseUrl
+```
+
+`klap logout` with no `--env` removes the whole file. `klap logout --env
+test` (or `--env live`) removes just that one key, keeping the other and
+`baseUrl` intact. See [Login / logout](/login).
 
 ## Security notes
 

@@ -5,9 +5,21 @@ klap listen --forward-to http://localhost:3000/webhooks --env test
 ```
 
 `--env` picks which key connects (only required if you have both a
-`test` and a `live` key configured — see [`configuration.md`](./configuration.md)).
+`test` and a `live` key configured — see [Configuration](/configuration)).
 This is what determines which charge events you see; see "Environment
 scoping" below.
+
+```bash
+# forward everything to a local server on a different port
+klap listen --forward-to http://localhost:8080/hooks
+
+# pick the environment explicitly when both a test and a live key are configured
+klap listen --forward-to http://localhost:3000/webhooks --env live
+
+# combine with sandbox trigger to drive events on demand instead of
+# waiting for a real payment
+klap sandbox trigger ch_a1b2c3d4e5 charge.confirmed
+```
 
 ## It is not a tunnel
 
@@ -54,8 +66,8 @@ webhook event dispatched for your organization — regardless of whether
 you have any webhook registered — as Server-Sent Events. This is the same
 mechanism documented in the main API docs' `realtime.md`, generalized
 from "one charge" to "every event for this org." Combine it with
-[`klap sandbox trigger`](./commands.md#klap-sandbox-trigger) to drive events on
-demand instead of waiting for a real payment.
+[Sandbox](/sandbox) to drive events on demand instead of waiting for a
+real payment.
 
 ## Environment scoping
 
@@ -66,11 +78,12 @@ isn't optional or client-side — it's enforced in the same request handler
 that streams the events, so there's no way to see across the boundary by
 mistake, only by deliberately reconnecting with the other key.
 
-Account, security, and webhook-delivery events (`payout_address.changed`,
-`auth.suspicious_activity`, `webhook.endpoint_unhealthy`, ...) are **not**
-filtered by environment — they describe the organization itself, not a
-charge, so there's no `test`/`live` distinction to make. Either key sees
-all of them.
+Webhook-delivery-health events (`webhook.delivery_failed`,
+`webhook.delivery_recovered`, `webhook.endpoint_unhealthy`) are **not**
+filtered by environment — they describe a webhook endpoint's own health,
+not a charge, so there's no `test`/`live` distinction to make. Either key
+sees all of them. See [Logs](/logs) for filtering a live tail down to one
+charge.
 
 ## Stopping
 
