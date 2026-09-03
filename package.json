@@ -1,0 +1,57 @@
+{
+  "name": "@klappay/cli",
+  "version": "0.1.0",
+  "license": "MIT",
+  "description": "Official CLI for the Klap Core API — create charges, simulate sandbox events, and forward webhooks to your local machine (`klap listen`) without exposing it to the internet.",
+  "keywords": ["klap", "klappay", "cli", "crypto", "payments", "web3"],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/klappay/klap-cli.git"
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "packageManager": "pnpm@10.33.0",
+  "type": "module",
+  "bin": {
+    "klap": "./dist/cli.js"
+  },
+  "files": ["dist", "LICENSE", "README.md", "logo.png", "docs"],
+  "publishConfig": {
+    "access": "public"
+  },
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "lint:fix": "biome check --write .",
+    "format": "biome format --write .",
+    "test": "vitest run",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "pnpm build && changeset publish",
+    "prepare": "husky"
+  },
+  "dependencies": {
+    "@klappay/node": "^4.0.0",
+    "@klappay/types": "^3.7.0",
+    "commander": "^13.0.0",
+    "picocolors": "^1.1.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^1.9.0",
+    "@changesets/cli": "^2.31.1",
+    "@commitlint/cli": "^19.5.0",
+    "@commitlint/config-conventional": "^19.5.0",
+    "@types/node": "^20.16.0",
+    "husky": "^9.1.0",
+    "lint-staged": "^15.2.0",
+    "tsup": "^8.3.0",
+    "typescript": "^5.6.0",
+    "vitest": "^3.2.6"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": ["@biomejs/biome", "esbuild"]
+  }
+}
