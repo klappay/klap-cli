@@ -43,9 +43,11 @@ export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
 
   const confirmed = overpaid || status === 'confirmed'
   const settlementStatus = confirmed ? (options.settlementStatus ?? null) : null
+  const id = `ch_fixture_${randomBytes(6).toString('hex')}`
+  const checkoutDomain = environment === 'live' ? 'pay.klappay.com' : 'pay.stage.klappay.com'
 
   return {
-    id: `ch_fixture_${randomBytes(6).toString('hex')}`,
+    id,
     amount,
     amountReceived,
     isOverpaid: overpaid,
@@ -63,7 +65,7 @@ export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
     source: null,
     metadata: null,
     redirectUrl: null,
-    checkoutUrl: null,
+    checkoutUrl: `https://${checkoutDomain}/c/${id}`,
     splitRecipients: [],
     escrow: null,
     createdAt: now.toISOString(),

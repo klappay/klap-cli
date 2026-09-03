@@ -1,4 +1,5 @@
 import { Command } from 'commander'
+import { version } from '../package.json'
 import { registerCharges } from './commands/charges'
 import { registerFixtures } from './commands/fixtures'
 import { registerListen } from './commands/listen'
@@ -10,7 +11,7 @@ import { registerWebhooks } from './commands/webhooks'
 
 const program = new Command()
 
-program.name('klap').description('Official CLI for the Klap Core API').version('0.1.0')
+program.name('klap').description('Official CLI for the Klap Core API').version(version)
 
 registerLogin(program)
 registerLogout(program)

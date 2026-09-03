@@ -34,6 +34,14 @@ describe('buildChargeFixture', () => {
     expect(new Date(charge.expiresAt).getTime()).toBeLessThan(Date.now())
   })
 
+  it('points checkoutUrl at the stage domain for test and prod domain for live', () => {
+    const test = buildChargeFixture({ environment: 'test' })
+    expect(test.checkoutUrl).toBe(`https://pay.stage.klappay.com/c/${test.id}`)
+
+    const live = buildChargeFixture({ environment: 'live' })
+    expect(live.checkoutUrl).toBe(`https://pay.klappay.com/c/${live.id}`)
+  })
+
   it('only sets settledAt when settlementStatus is completed', () => {
     const failed = buildChargeFixture({ status: 'confirmed', settlementStatus: 'failed' })
     expect(failed.settlementStatus).toBe('failed')

@@ -1,15 +1,8 @@
 import type { Command } from 'commander'
 import { requireClient, resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
-import { printEnvironmentBanner, runCommand } from '../print'
-import { connectToRelay } from '../relay'
-
-function extractChargeId(data: unknown): string | undefined {
-  if (typeof data === 'object' && data !== null && 'id' in data && typeof data.id === 'string') {
-    return data.id
-  }
-  return undefined
-}
+import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
+import { connectToRelay, extractChargeId } from '../relay'
 
 export function registerLogs(program: Command): void {
   program
@@ -46,7 +39,7 @@ export function registerLogs(program: Command): void {
           if (evt.type !== 'webhook') continue
           const chargeId = extractChargeId(evt.payload.data)
           if (options.charge && chargeId !== options.charge) continue
-          console.log(`${evt.payload.createdAt}  ${evt.payload.event}  ${chargeId ?? '-'}`)
+          printRelayEvent(evt.payload, chargeId)
         }
       }),
     )

@@ -5,6 +5,13 @@ export type RelayEvent =
   | { type: 'session'; secret: string }
   | { type: 'webhook'; payload: WebhookPayload }
 
+export function extractChargeId(data: unknown): string | undefined {
+  if (typeof data === 'object' && data !== null && 'id' in data && typeof data.id === 'string') {
+    return data.id
+  }
+  return undefined
+}
+
 export function parseSessionSecret(data: unknown): string {
   if (
     typeof data === 'object' &&

@@ -1,5 +1,11 @@
 import { KlapApiError } from '@klappay/node'
-import type { Charge, Webhook, WebhookDelivery, WebhookListItem } from '@klappay/types'
+import type {
+  Charge,
+  Webhook,
+  WebhookDelivery,
+  WebhookListItem,
+  WebhookPayload,
+} from '@klappay/types'
 import pc from 'picocolors'
 import type { CliEnvironment } from './config'
 
@@ -24,6 +30,9 @@ export function printCharge(charge: Charge): void {
   console.log(`  paidWith:          ${paidWith || 'none yet'}`)
   console.log(`  address:           ${charge.address}`)
   console.log(`  environment:       ${charge.environment}`)
+  if (charge.checkoutUrl) {
+    console.log(`  checkoutUrl:       ${pc.underline(pc.cyan(charge.checkoutUrl))}`)
+  }
 }
 
 function printWebhookCommon(
@@ -59,6 +68,10 @@ export function printDelivery(delivery: WebhookDelivery): void {
   console.log(`  attempts:      ${delivery.attempts}`)
   console.log(`  responseCode:  ${delivery.responseCode ?? 'null'}`)
   console.log(`  createdAt:     ${delivery.createdAt}`)
+}
+
+export function printRelayEvent(payload: WebhookPayload, chargeId: string | undefined): void {
+  console.log(`${payload.createdAt}  ${payload.event}  ${chargeId ?? '-'}`)
 }
 
 export async function runCommand(action: () => Promise<void>): Promise<void> {

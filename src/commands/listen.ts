@@ -3,21 +3,24 @@ import type { Command } from 'commander'
 import pc from 'picocolors'
 import { resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
-import { printEnvironmentBanner, runCommand } from '../print'
-import { connectToRelay } from '../relay'
+import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
+import { connectToRelay, extractChargeId } from '../relay'
 
 const FORWARD_TIMEOUT_MS = 8_000
+
+type ListenOptions = { forwardTo?: string; charge?: string; env?: string }
 
 export function registerListen(program: Command): void {
   program
     .command('listen')
-    .description('Forward every webhook event to a local URL, in real time — no tunnel required')
-    .requiredOption(
+    .description('Print every webhook event live, and optionally forward it to a local URL')
+    .option(
       '--forward-to <url>',
-      'Local URL to forward events to, e.g. http://localhost:3000/webhooks',
+      'Local URL to forward events to, e.g. http://localhost:3000/webhooks — omit to just print them',
     )
+    .option('--charge <id>', 'Only show/forward events for this charge')
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
-    .action((options: { forwardTo: string; env?: string }) =>
+    .action((options: ListenOptions) =>
       runCommand(async () => {
         const config = await requireConfig()
         const { key, env } = resolveApiKey(config, parseCliEnvironment(options.env))
@@ -32,8 +35,21 @@ export function registerListen(program: Command): void {
         for await (const evt of connectToRelay(config.baseUrl, key, controller.signal)) {
           if (evt.type === 'session') {
             secret = evt.secret
-            console.log(pc.green('Ready!'), `Forwarding events to ${options.forwardTo}`)
-            console.log(pc.dim(`Signing secret: ${secret}`))
+            console.log(
+              pc.green('Ready!'),
+              options.forwardTo
+                ? `Forwarding events to ${options.forwardTo}`
+                : 'Listening for events',
+            )
+            if (options.forwardTo) console.log(pc.dim(`Signing secret: ${secret}`))
+            continue
+          }
+
+          const chargeId = extractChargeId(evt.payload.data)
+          if (options.charge && chargeId !== options.charge) continue
+
+          if (!options.forwardTo) {
+            printRelayEvent(evt.payload, chargeId)
             continue
           }
 
