@@ -1,5 +1,11 @@
 # @klappay/cli
 
+## 1.1.0
+
+### Minor Changes
+
+- dded2cd: Added `klap webhooks trigger <event>` — signs and delivers a fake webhook payload straight to a local URL, with no Core involved and no login required (unless `--charge <id>` is used to substitute a real charge's data for the synthesized fixture). Same HMAC signature scheme `klap listen --forward-to` already uses, so a handler under test can't tell the difference from a real delivery.
+
 ## 1.0.0
 
 ### Major Changes
