@@ -94,8 +94,21 @@ klap listen --forward-to http://localhost:3000/webhooks
 
 Opens a live connection and forwards every event for your organization to
 your own local server, signed exactly like a real webhook delivery — no
-tunnel, no public URL, nothing to deploy. See [Listen](/listen) for how
-this works and why it's safe to run on your own machine.
+tunnel, no public URL, nothing to deploy. Drop `--forward-to` to just
+watch events live instead, or add `--charge <id>` to focus on one. See
+[Listen](/listen) for how this works and why it's safe to run on your
+own machine.
+
+## Fire a fake webhook at a handler, with no Core involved
+
+```bash
+klap webhooks trigger charge.confirmed --url http://localhost:3000/webhooks --secret whsec_test123
+```
+
+No login, no charge, no waiting for `klap listen` to see anything —
+signs a realistic payload and delivers it right now, so you can test
+your handler's signature verification and parsing in isolation. See
+[Webhooks](/webhooks#klap-webhooks-trigger).
 
 ## Generate test data without touching the API
 

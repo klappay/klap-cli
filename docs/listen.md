@@ -1,17 +1,29 @@
 # `klap listen` — how it works, and why it's safe
 
 ```bash
-klap listen --forward-to http://localhost:3000/webhooks --env test
+klap listen [--forward-to <url>] [--charge <id>] [--env test|live]
 ```
 
-`--env` picks which key connects (only required if you have both a
-`test` and a `live` key configured — see [Configuration](/configuration)).
-This is what determines which charge events you see; see "Environment
-scoping" below.
+`--forward-to` is optional — without it, `klap listen` just prints every
+event live (same format as [`klap logs --tail`](/logs)); with it, every
+event is also signed and POSTed to that URL. `--charge <id>` filters
+either mode down to just one charge. `--env` picks which key connects
+(only required if you have both a `test` and a `live` key configured —
+see [Configuration](/configuration)); this is what determines which
+charge events you see, see "Environment scoping" below.
 
 ```bash
-# forward everything to a local server on a different port
-klap listen --forward-to http://localhost:8080/hooks
+# just watch everything live — no local server needed
+klap listen
+
+# watch just one charge
+klap listen --charge ch_a1b2c3d4e5
+
+# forward everything to a local server
+klap listen --forward-to http://localhost:3000/webhooks
+
+# forward just one charge's events, on a different port
+klap listen --forward-to http://localhost:8080/hooks --charge ch_a1b2c3d4e5
 
 # pick the environment explicitly when both a test and a live key are configured
 klap listen --forward-to http://localhost:3000/webhooks --env live
@@ -20,6 +32,10 @@ klap listen --forward-to http://localhost:3000/webhooks --env live
 # waiting for a real payment
 klap sandbox trigger ch_a1b2c3d4e5 charge.confirmed
 ```
+
+Need to fire a specific event at a handler right now, with no charge,
+no login, and no waiting for `klap listen` to see anything at all? See
+[`klap webhooks trigger`](/webhooks#klap-webhooks-trigger) instead.
 
 ## It is not a tunnel
 
@@ -47,17 +63,20 @@ local HTTP call — not Klap's backend. Klap's servers never see or resolve
 `localhost`; they only ever talk to the outbound connection your CLI
 opened. There is no new inbound exposure to reason about.
 
-## Real signatures, every time
+## Real signatures, every time you forward
 
 Each connection gets its own ephemeral signing secret (`whsec_...`),
 generated when you connect and **never persisted** — different from the
 real secret behind any webhook you've registered with
-`POST /v1/webhooks`. `klap listen` signs every forwarded payload with it
-using the exact same scheme a real webhook delivery uses:
-`X-Klap-Signature: t=<unix-seconds>,v1=<hex-encoded HMAC-SHA256 of
-"{timestamp}.{raw body}">`. Your handler code doesn't need a special
-"test mode" branch — the same signature verification you ship to
-production works unchanged while testing locally.
+`POST /v1/webhooks`. With `--forward-to`, `klap listen` signs every
+forwarded payload with it using the exact same scheme a real webhook
+delivery uses: `X-Klap-Signature: t=<unix-seconds>,v1=<hex-encoded
+HMAC-SHA256 of "{timestamp}.{raw body}">`. Your handler code doesn't
+need a special "test mode" branch — the same signature verification you
+ship to production works unchanged while testing locally. Without
+`--forward-to`, nothing is signed or sent anywhere — the secret is
+still printed (so you can copy it if you decide to forward later in the
+same session) but otherwise unused.
 
 ## What it's built on
 
@@ -82,8 +101,9 @@ Webhook-delivery-health events (`webhook.delivery_failed`,
 `webhook.delivery_recovered`, `webhook.endpoint_unhealthy`) are **not**
 filtered by environment — they describe a webhook endpoint's own health,
 not a charge, so there's no `test`/`live` distinction to make. Either key
-sees all of them. See [Logs](/logs) for filtering a live tail down to one
-charge.
+sees all of them. Use `--charge <id>` (above) to filter either mode down
+to one charge — [`klap logs --tail`](/logs) takes the same flag over the
+same underlying stream.
 
 ## Stopping
 
