@@ -1,4 +1,5 @@
 import {
+  type Charge,
   type CreateWebhookRequest,
   WEBHOOK_EVENTS_WILDCARD,
   type WebhookCategory,
@@ -10,13 +11,16 @@ import type { Command } from 'commander'
 import pc from 'picocolors'
 import { requireClient } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment } from '../config'
+import { buildWebhookPayloadFixture, isChargeEvent } from '../fixtures'
 import {
   printDelivery,
+  printDeliveryResult,
   printEnvironmentBanner,
   printWebhook,
   printWebhookListItem,
   runCommand,
 } from '../print'
+import { deliverWebhook } from '../webhook-delivery'
 
 export function parseWebhookEvent(
   value: string,
@@ -26,6 +30,16 @@ export function parseWebhookEvent(
   if (!parsed.success) {
     throw new Error(
       `--event must be "${WEBHOOK_EVENTS_WILDCARD}" or one of ${WebhookEventTypeSchema.options.flatMap((o) => o.options).join(', ')}, got "${value}"`,
+    )
+  }
+  return parsed.data
+}
+
+export function parseTriggerableWebhookEvent(value: string): WebhookEventType {
+  const parsed = WebhookEventTypeSchema.safeParse(value)
+  if (!parsed.success) {
+    throw new Error(
+      `event must be one of ${WebhookEventTypeSchema.options.flatMap((o) => o.options).join(', ')}, got "${value}"`,
     )
   }
   return parsed.data
@@ -143,5 +157,41 @@ export function registerWebhooks(program: Command): void {
         await klap.webhooks.retryDelivery(id, deliveryId)
         console.log(pc.green('Retry queued.'), deliveryId)
       }),
+    )
+
+  webhooks
+    .command('trigger <event>')
+    .description(
+      'Sign and deliver a fake webhook payload to a local URL — no Core involved, no login needed unless --charge is used',
+    )
+    .requiredOption('--url <url>', 'Local URL to deliver the signed payload to')
+    .requiredOption(
+      '--secret <secret>',
+      'HMAC secret to sign with — must match what your handler verifies against',
+    )
+    .option(
+      '--charge <id>',
+      "Use a real charge's current data instead of a fixture (charge.* events only)",
+    )
+    .option('--env <environment>', `${ENV_FLAG_DESCRIPTION} — only consulted with --charge`)
+    .action(
+      (event: string, options: { url: string; secret: string; charge?: string; env?: string }) =>
+        runCommand(async () => {
+          const triggerEvent = parseTriggerableWebhookEvent(event)
+
+          let chargeData: Charge | undefined
+          if (options.charge) {
+            if (!isChargeEvent(triggerEvent)) {
+              throw new Error('--charge only applies to a charge.* event')
+            }
+            const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
+            printEnvironmentBanner(env)
+            chargeData = await klap.charges.get(options.charge)
+          }
+
+          const payload = buildWebhookPayloadFixture(triggerEvent, chargeData)
+          const result = await deliverWebhook(options.url, payload, options.secret)
+          printDeliveryResult(triggerEvent, result)
+        }),
     )
 }

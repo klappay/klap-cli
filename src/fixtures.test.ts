@@ -1,5 +1,10 @@
+import { WebhookPayloadSchema } from '@klappay/types'
 import { describe, expect, it } from 'vitest'
-import { buildChargeFixture } from './fixtures'
+import {
+  buildChargeFixture,
+  buildWebhookHealthFixture,
+  buildWebhookPayloadFixture,
+} from './fixtures'
 
 describe('buildChargeFixture', () => {
   it('defaults to a fresh pending charge', () => {
@@ -49,5 +54,43 @@ describe('buildChargeFixture', () => {
 
     const completed = buildChargeFixture({ status: 'confirmed', settlementStatus: 'completed' })
     expect(completed.settledAt).not.toBeNull()
+  })
+})
+
+describe('buildWebhookHealthFixture', () => {
+  it('produces a WebhookHealthEventData shape', () => {
+    const health = buildWebhookHealthFixture()
+    expect(health.webhookId).toMatch(/^wh_fixture_/)
+    expect(typeof health.url).toBe('string')
+    expect(health.failureRatio).toBeGreaterThan(0)
+  })
+})
+
+describe('buildWebhookPayloadFixture', () => {
+  it('wraps a Charge fixture for a charge.* event, valid against WebhookPayloadSchema', () => {
+    const payload = buildWebhookPayloadFixture('charge.confirmed')
+    expect(payload.event).toBe('charge.confirmed')
+    expect(WebhookPayloadSchema.safeParse(payload).success).toBe(true)
+    expect(payload.data).toMatchObject({ status: 'confirmed' })
+  })
+
+  it('derives the right charge status per event', () => {
+    const settled = buildWebhookPayloadFixture('charge.settled')
+    expect(settled.data).toMatchObject({ settlementStatus: 'completed' })
+
+    const overpaid = buildWebhookPayloadFixture('charge.overpaid')
+    expect(overpaid.data).toMatchObject({ isOverpaid: true })
+  })
+
+  it('uses the given real charge data instead of a fixture when provided', () => {
+    const realCharge = buildChargeFixture({ status: 'confirmed', amount: 12.34 })
+    const payload = buildWebhookPayloadFixture('charge.confirmed', realCharge)
+    expect(payload.data).toBe(realCharge)
+  })
+
+  it('wraps a WebhookHealthEventData fixture for a webhook.* event', () => {
+    const payload = buildWebhookPayloadFixture('webhook.endpoint_unhealthy')
+    expect(WebhookPayloadSchema.safeParse(payload).success).toBe(true)
+    expect(payload.data).toMatchObject({ webhookId: expect.stringMatching(/^wh_fixture_/) })
   })
 })

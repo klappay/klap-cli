@@ -1,5 +1,14 @@
 import { randomBytes } from 'node:crypto'
-import type { AcceptedPayment, Charge, ChargeStatus, SettlementStatus } from '@klappay/types'
+import type {
+  AcceptedPayment,
+  Charge,
+  ChargeStatus,
+  ChargeWebhookEventTypeSchema,
+  SettlementStatus,
+  WebhookEventType,
+  WebhookHealthEventData,
+  WebhookPayload,
+} from '@klappay/types'
 
 export type ChargeFixtureOptions = {
   status?: ChargeStatus
@@ -73,5 +82,56 @@ export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
     confirmedAt: confirmed ? now.toISOString() : null,
     settledAt: settlementStatus === 'completed' ? now.toISOString() : null,
     lastActivityAt: now.toISOString(),
+  }
+}
+
+type ChargeWebhookEventType = (typeof ChargeWebhookEventTypeSchema.options)[number]
+
+const CHARGE_EVENT_FIXTURE: Record<ChargeWebhookEventType, ChargeFixtureOptions> = {
+  'charge.created': { status: 'pending' },
+  'charge.partially_paid': { status: 'partially_paid' },
+  'charge.confirmed': { status: 'confirmed' },
+  'charge.expired': { status: 'expired' },
+  'charge.underpaid': { status: 'underpaid' },
+  'charge.settled': { status: 'confirmed', settlementStatus: 'completed' },
+  'charge.settlement_failed': { status: 'confirmed', settlementStatus: 'failed' },
+  'charge.overpaid': { status: 'pending', overpaid: true },
+  // ponytail: buildChargeFixture has no escrow shape yet — these two just
+  // render as a plain confirmed charge; add one if a handler under test
+  // actually needs `charge.escrow` populated.
+  'charge.escrow_released': { status: 'confirmed' },
+  'charge.escrow_refunded': { status: 'confirmed' },
+}
+
+export function isChargeEvent(event: WebhookEventType): event is ChargeWebhookEventType {
+  return event in CHARGE_EVENT_FIXTURE
+}
+
+export function buildWebhookHealthFixture(): WebhookHealthEventData {
+  return {
+    webhookId: `wh_fixture_${randomBytes(6).toString('hex')}`,
+    url: 'https://example.com/webhooks',
+    failureRatio: 0.42,
+  }
+}
+
+/**
+ * The full payload `klap webhooks trigger` signs and delivers. `chargeData`
+ * lets a caller substitute a real fetched charge for the synthesized
+ * fixture — ignored for a `webhook.*` event, which has no charge to speak of.
+ */
+export function buildWebhookPayloadFixture(
+  event: WebhookEventType,
+  chargeData?: Charge,
+): WebhookPayload {
+  const data = isChargeEvent(event)
+    ? (chargeData ?? buildChargeFixture(CHARGE_EVENT_FIXTURE[event]))
+    : buildWebhookHealthFixture()
+
+  return {
+    id: `evt_fixture_${randomBytes(6).toString('hex')}`,
+    event,
+    createdAt: new Date().toISOString(),
+    data,
   }
 }

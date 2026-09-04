@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseWebhookCategory, parseWebhookEvent } from './webhooks'
+import { parseTriggerableWebhookEvent, parseWebhookCategory, parseWebhookEvent } from './webhooks'
 
 describe('parseWebhookEvent', () => {
   it('accepts the wildcard', () => {
@@ -12,6 +12,26 @@ describe('parseWebhookEvent', () => {
 
   it('rejects a made-up event name', () => {
     expect(() => parseWebhookEvent('charge.exploded')).toThrow(/--event must be/)
+  })
+})
+
+describe('parseTriggerableWebhookEvent', () => {
+  it('accepts a charge event', () => {
+    expect(parseTriggerableWebhookEvent('charge.confirmed')).toBe('charge.confirmed')
+  })
+
+  it('accepts a webhook-health event', () => {
+    expect(parseTriggerableWebhookEvent('webhook.endpoint_unhealthy')).toBe(
+      'webhook.endpoint_unhealthy',
+    )
+  })
+
+  it('rejects the wildcard — it is a subscription filter, not a real event', () => {
+    expect(() => parseTriggerableWebhookEvent('*')).toThrow(/event must be one of/)
+  })
+
+  it('rejects a made-up event name', () => {
+    expect(() => parseTriggerableWebhookEvent('charge.exploded')).toThrow(/event must be one of/)
   })
 })
 
