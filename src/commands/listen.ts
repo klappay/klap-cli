@@ -1,12 +1,10 @@
-import { createHmac } from 'node:crypto'
 import type { Command } from 'commander'
 import pc from 'picocolors'
 import { resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
-import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
+import { printDeliveryResult, printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
-
-const FORWARD_TIMEOUT_MS = 8_000
+import { deliverWebhook } from '../webhook-delivery'
 
 type ListenOptions = { forwardTo?: string; charge?: string; env?: string }
 
@@ -53,33 +51,8 @@ export function registerListen(program: Command): void {
             continue
           }
 
-          const body = JSON.stringify(evt.payload)
-          const timestamp = Math.floor(Date.now() / 1000)
-          const signature = createHmac('sha256', secret)
-            .update(`${timestamp}.${body}`)
-            .digest('hex')
-          const start = Date.now()
-
-          try {
-            const res = await fetch(options.forwardTo, {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-Klap-Signature': `t=${timestamp},v1=${signature}`,
-                'X-Klap-Event': evt.payload.event,
-                'X-Klap-Delivery': evt.payload.id,
-              },
-              body,
-              signal: AbortSignal.timeout(FORWARD_TIMEOUT_MS),
-            })
-            console.log(
-              `${pc.cyan('-->')} ${evt.payload.event} [${res.status}] ${Date.now() - start}ms`,
-            )
-          } catch (err) {
-            console.log(
-              `${pc.red('-->')} ${evt.payload.event} [failed] ${err instanceof Error ? err.message : String(err)}`,
-            )
-          }
+          const result = await deliverWebhook(options.forwardTo, evt.payload, secret)
+          printDeliveryResult(evt.payload.event, result)
         }
       }),
     )

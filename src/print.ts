@@ -8,6 +8,7 @@ import type {
 } from '@klappay/types'
 import pc from 'picocolors'
 import type { CliEnvironment } from './config'
+import type { DeliveryResult } from './webhook-delivery'
 
 /** Printed at the start of every command that resolves an environment — `live` is deliberately loud, never easy to miss or scroll past. */
 export function printEnvironmentBanner(env: CliEnvironment): void {
@@ -72,6 +73,14 @@ export function printDelivery(delivery: WebhookDelivery): void {
 
 export function printRelayEvent(payload: WebhookPayload, chargeId: string | undefined): void {
   console.log(`${payload.createdAt}  ${payload.event}  ${chargeId ?? '-'}`)
+}
+
+export function printDeliveryResult(event: string, result: DeliveryResult): void {
+  if ('error' in result) {
+    console.log(`${pc.red('-->')} ${event} [failed] ${result.error}`)
+  } else {
+    console.log(`${pc.cyan('-->')} ${event} [${result.status}] ${result.ms}ms`)
+  }
 }
 
 export async function runCommand(action: () => Promise<void>): Promise<void> {
