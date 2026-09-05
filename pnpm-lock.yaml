@@ -9,11 +9,11 @@ importers:
   .:
     dependencies:
       '@klappay/node':
-        specifier: ^4.1.0
-        version: 4.1.0
+        specifier: ^4.1.1
+        version: 4.1.1
       '@klappay/types':
-        specifier: ^3.8.0
-        version: 3.8.0
+        specifier: ^4.0.0
+        version: 4.0.0
       commander:
         specifier: ^13.0.0
         version: 13.1.0
@@ -847,12 +847,12 @@ packages:
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
 
-  '@klappay/node@4.1.0':
-    resolution: {integrity: sha512-XxLxs+IePKlJbkCN5GVmvpQFxQW/8bfPowi8C6XMh1ZmwLKHeZvl18Qg5lYZelNvWRFoYc2IxnzMHZbv+6umPg==}
+  '@klappay/node@4.1.1':
+    resolution: {integrity: sha512-EAHWi/NYKOKgdKb+Jcx2LFXNSS1X0ludVo2pyQw41ZdqhbJj7ULaAA8VSO51xjkOmARFTFur3d4uoTN7KZ/ivA==}
     engines: {node: '>=24'}
 
-  '@klappay/types@3.8.0':
-    resolution: {integrity: sha512-+IRIcXmbSDmSohrI9WPbJl+mQnayYyVaBFIPRIIoA+Jssop9vtkF9q6sPhMaailFQhVJxWEn9V4ERQadl91QrQ==}
+  '@klappay/types@4.0.0':
+    resolution: {integrity: sha512-uVv6lzisA34u2bzoSf0/hOsj4ckbM/YnrwzGNzjPlR41KHjfNh7RtxIvDDA0MOp6Gv1C1xS9PKa4wv495rNlWA==}
     engines: {node: '>=24'}
 
   '@manypkg/find-root@1.1.0':
@@ -3382,11 +3382,11 @@ snapshots:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.6.0
 
-  '@klappay/node@4.1.0':
+  '@klappay/node@4.1.1':
     dependencies:
-      '@klappay/types': 3.8.0
+      '@klappay/types': 4.0.0
 
-  '@klappay/types@3.8.0':
+  '@klappay/types@4.0.0':
     dependencies:
       zod: 3.25.76
 
