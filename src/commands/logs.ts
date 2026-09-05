@@ -1,5 +1,5 @@
 import type { Command } from 'commander'
-import { requireClient, resolveApiKey } from '../client'
+import { requireEnvClient, resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
 import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
@@ -21,8 +21,7 @@ export function registerLogs(program: Command): void {
               'Pass --charge <id> to show its timeline, or --tail to stream live events.',
             )
           }
-          const { client: klap, env: resolvedEnv } = await requireClient(env)
-          printEnvironmentBanner(resolvedEnv)
+          const klap = await requireEnvClient(options.env)
           const events = await klap.charges.getTimeline(options.charge)
           for (const event of events) console.log(`${event.at}  ${event.type}`)
           return

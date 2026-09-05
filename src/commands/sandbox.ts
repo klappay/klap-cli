@@ -1,8 +1,8 @@
 import { type TriggerableChargeEvent, TriggerableChargeEventSchema } from '@klappay/types'
 import type { Command } from 'commander'
-import { requireClient } from '../client'
-import { ENV_FLAG_DESCRIPTION_SANDBOX, parseCliEnvironment } from '../config'
-import { printCharge, printEnvironmentBanner, runCommand } from '../print'
+import { requireEnvClient } from '../client'
+import { ENV_FLAG_DESCRIPTION_SANDBOX } from '../config'
+import { printCharge, runCommand } from '../print'
 
 export function parseTriggerableEvent(value: string): TriggerableChargeEvent {
   const parsed = TriggerableChargeEventSchema.safeParse(value)
@@ -28,8 +28,7 @@ export function registerSandbox(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION_SANDBOX)
     .action((chargeId: string, event: string, options: { amount?: string; env?: string }) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         const charge = await klap.sandbox.trigger(
           chargeId,
           parseTriggerableEvent(event),

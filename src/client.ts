@@ -1,6 +1,12 @@
 import { type KlapClient, createClient } from '@klappay/node'
-import type { CliEnvironment, KlapCliConfig } from './config'
-import { LOGIN_HINT, requireConfig } from './config'
+import {
+  type CliEnvironment,
+  type KlapCliConfig,
+  LOGIN_HINT,
+  parseCliEnvironment,
+  requireConfig,
+} from './config'
+import { printEnvironmentBanner } from './print'
 
 /**
  * Never silently guesses which key to use when both are configured — that's
@@ -46,4 +52,16 @@ export async function requireClient(
     client: createClient({ apiKey: resolved.key, baseUrl: config.baseUrl }),
     env: resolved.env,
   }
+}
+
+/**
+ * `requireClient()` + the `--env` flag parsing + the LIVE/TEST banner —
+ * every command that talks to the API does exactly this sequence and
+ * never uses the resolved `env` for anything else, so this is the one
+ * line most `.action()`s actually need.
+ */
+export async function requireEnvClient(envFlag?: string): Promise<KlapClient> {
+  const { client, env } = await requireClient(parseCliEnvironment(envFlag))
+  printEnvironmentBanner(env)
+  return client
 }

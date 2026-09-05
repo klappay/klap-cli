@@ -1,9 +1,9 @@
 import type { AcceptedPayment, ChargeFeePayer } from '@klappay/types'
 import { ChargeFeePayerSchema, NetworkSchema, TokenSchema } from '@klappay/types'
 import type { Command } from 'commander'
-import { requireClient } from '../client'
-import { ENV_FLAG_DESCRIPTION, parseCliEnvironment } from '../config'
-import { printCharge, printEnvironmentBanner, runCommand } from '../print'
+import { requireEnvClient } from '../client'
+import { ENV_FLAG_DESCRIPTION } from '../config'
+import { printCharge, runCommand } from '../print'
 
 type CreateOptions = {
   amount: string
@@ -68,8 +68,7 @@ export function registerCharges(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((options: CreateOptions) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         const charge = await klap.charges.create({
           amount: Number(options.amount),
           currency: 'USD',

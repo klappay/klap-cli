@@ -9,13 +9,12 @@ import {
 } from '@klappay/types'
 import type { Command } from 'commander'
 import pc from 'picocolors'
-import { requireClient } from '../client'
-import { ENV_FLAG_DESCRIPTION, parseCliEnvironment } from '../config'
+import { requireEnvClient } from '../client'
+import { ENV_FLAG_DESCRIPTION } from '../config'
 import { buildWebhookPayloadFixture, isChargeEvent } from '../fixtures'
 import {
   printDelivery,
   printDeliveryResult,
-  printEnvironmentBanner,
   printWebhook,
   printWebhookListItem,
   runCommand,
@@ -88,8 +87,7 @@ export function registerWebhooks(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((options: CreateOptions) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         const input: CreateWebhookRequest = { url: options.url }
         if (options.event.length > 0) input.events = options.event.map(parseWebhookEvent)
         if (options.category.length > 0)
@@ -105,8 +103,7 @@ export function registerWebhooks(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((options: { env?: string }) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         const list = await klap.webhooks.list()
         if (list.length === 0) {
           console.log(pc.dim('No webhooks registered.'))
@@ -122,8 +119,7 @@ export function registerWebhooks(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((id: string, options: { env?: string }) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         await klap.webhooks.delete(id)
         console.log(pc.green('Deleted.'), id)
       }),
@@ -135,8 +131,7 @@ export function registerWebhooks(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((id: string, options: { env?: string }) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         const page = await klap.webhooks.listDeliveries(id)
         if (page.data.length === 0) {
           console.log(pc.dim('No deliveries yet.'))
@@ -152,8 +147,7 @@ export function registerWebhooks(program: Command): void {
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((id: string, deliveryId: string, options: { env?: string }) =>
       runCommand(async () => {
-        const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-        printEnvironmentBanner(env)
+        const klap = await requireEnvClient(options.env)
         await klap.webhooks.retryDelivery(id, deliveryId)
         console.log(pc.green('Retry queued.'), deliveryId)
       }),
@@ -184,8 +178,7 @@ export function registerWebhooks(program: Command): void {
             if (!isChargeEvent(triggerEvent)) {
               throw new Error('--charge only applies to a charge.* event')
             }
-            const { client: klap, env } = await requireClient(parseCliEnvironment(options.env))
-            printEnvironmentBanner(env)
+            const klap = await requireEnvClient(options.env)
             chargeData = await klap.charges.get(options.charge)
           }
 
