@@ -1,5 +1,11 @@
 # @klappay/cli
 
+## 1.3.0
+
+### Minor Changes
+
+- a5a2079: Bump `@klappay/node` to `4.2.0`. Adds `klap charges watch <id>`, a live tail of a single charge's status and confirmation progress straight from its own event stream — no webhook endpoint or `klap listen` relay needed.
+
 ## 1.2.1
 
 ### Patch Changes

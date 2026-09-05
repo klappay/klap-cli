@@ -1,6 +1,6 @@
 {
   "name": "@klappay/cli",
-  "version": "1.2.1",
+  "version": "1.3.0",
   "license": "MIT",
   "description": "Official CLI for the Klap Core API — create charges, simulate sandbox events, and forward webhooks to your local machine (`klap listen`) without exposing it to the internet.",
   "keywords": ["klap", "klappay", "cli", "crypto", "payments", "web3"],
