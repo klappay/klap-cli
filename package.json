@@ -37,7 +37,7 @@
     "prepare": "husky"
   },
   "dependencies": {
-    "@klappay/node": "^4.1.1",
+    "@klappay/node": "^4.2.0",
     "@klappay/types": "^4.0.0",
     "commander": "^13.0.0",
     "picocolors": "^1.1.0"

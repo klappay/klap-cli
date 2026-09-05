@@ -62,7 +62,7 @@ versions of these docs, regenerated on every deploy, for feeding an agent or MCP
 |---|---|
 | [`docs/getting-started.md`](https://github.com/klappay/klap-cli/tree/main/docs/getting-started.md) | Install, login, your first charge |
 | [`docs/login.md`](https://github.com/klappay/klap-cli/tree/main/docs/login.md) | `klap login`/`klap logout` |
-| [`docs/charges.md`](https://github.com/klappay/klap-cli/tree/main/docs/charges.md) | `klap charges create`, in depth — including the `checkoutUrl` it prints |
+| [`docs/charges.md`](https://github.com/klappay/klap-cli/tree/main/docs/charges.md) | `klap charges create`/`watch`, in depth — including the `checkoutUrl` it prints and the confirmation progress bar |
 | [`docs/sandbox.md`](https://github.com/klappay/klap-cli/tree/main/docs/sandbox.md) | Simulating every charge lifecycle event |
 | [`docs/listen.md`](https://github.com/klappay/klap-cli/tree/main/docs/listen.md) | How `klap listen` works, and why it's not a tunnel |
 | [`docs/logs.md`](https://github.com/klappay/klap-cli/tree/main/docs/logs.md) | Timelines and live tailing |

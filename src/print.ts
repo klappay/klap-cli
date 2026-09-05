@@ -1,6 +1,7 @@
 import { KlapApiError } from '@klappay/node'
 import type {
   Charge,
+  ConfirmationProgress,
   Webhook,
   WebhookDelivery,
   WebhookListItem,
@@ -38,6 +39,18 @@ export function printCharge(charge: Charge): void {
   if (charge.checkoutUrl) {
     console.log(`  checkoutUrl:       ${pc.underline(pc.cyan(charge.checkoutUrl))}`)
   }
+}
+
+const PROGRESS_BAR_WIDTH = 20
+
+export function formatConfirmationProgress(progress: ConfirmationProgress): string {
+  const filled = Math.round((progress.percent / 100) * PROGRESS_BAR_WIDTH)
+  const bar = '#'.repeat(filled) + '-'.repeat(PROGRESS_BAR_WIDTH - filled)
+  return `[${bar}] ${progress.percent}%  ${progress.network} ${progress.blocksSeen}/${progress.blocksRequired} blocks`
+}
+
+export function printConfirmationProgress(progress: ConfirmationProgress): void {
+  console.log(formatConfirmationProgress(progress))
 }
 
 function printWebhookCommon(

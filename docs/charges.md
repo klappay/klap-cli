@@ -78,11 +78,41 @@ environment, so you're never uncertain which one you're looking at.
 ### Then what?
 
 ```bash
-# watch it live as events come in
-klap logs --tail --charge ch_a1b2c3d4e5
+# watch it live as events come in — no webhook or relay setup needed
+klap charges watch ch_a1b2c3d4e5
 
 # or drive it yourself, without waiting for a real payment
 klap sandbox trigger ch_a1b2c3d4e5 charge.confirmed
 ```
 
 See [Sandbox](/sandbox) and [Logs](/logs).
+
+## `klap charges watch`
+
+```bash
+klap charges watch <id> [--env test|live]
+```
+
+Opens a live connection straight to this charge's own event stream and
+prints its current state every time `status`/`settlementStatus` changes,
+plus a confirmation progress bar while a detected transfer is still
+waiting on block confirmations. Unlike `klap logs --tail`, it needs no
+webhook endpoint or `klap listen` relay — just the charge id. Runs until
+the charge reaches a terminal state or you stop it with Ctrl+C.
+
+```
+ TEST  — sandbox, no real funds
+[#######-------------] 33%  base 4/12 blocks
+ch_a1b2c3d4e5
+  status:            confirmed
+  settlementStatus:  pending
+  amount:            10
+  amountReceived:    10
+  fee:               0.1 (1%, paid by merchant)
+  merchantAmount:    9.9
+  acceptedPayments:  USDC:base
+  paidWith:          USDC:base
+  address:           0x1234567890abcdef1234567890abcdef12345678
+  environment:       test
+  checkoutUrl:       https://pay.stage.klappay.com/c/ch_a1b2c3d4e5
+```

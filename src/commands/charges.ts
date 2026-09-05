@@ -1,9 +1,10 @@
+import { isChargeEvent, isConfirmationProgressEvent } from '@klappay/node'
 import type { AcceptedPayment, ChargeFeePayer } from '@klappay/types'
 import { ChargeFeePayerSchema, NetworkSchema, TokenSchema } from '@klappay/types'
 import type { Command } from 'commander'
 import { requireEnvClient } from '../client'
 import { ENV_FLAG_DESCRIPTION } from '../config'
-import { printCharge, runCommand } from '../print'
+import { printCharge, printConfirmationProgress, runCommand } from '../print'
 
 type CreateOptions = {
   amount: string
@@ -77,6 +78,24 @@ export function registerCharges(program: Command): void {
           feePayer: options.feePayer ? parseFeePayer(options.feePayer) : undefined,
         })
         printCharge(charge)
+      }),
+    )
+
+  charges
+    .command('watch <id>')
+    .description(
+      'Stream a charge’s live status and confirmation progress until it settles (Ctrl+C to stop)',
+    )
+    .option('--env <environment>', ENV_FLAG_DESCRIPTION)
+    .action((id: string, options: { env?: string }) =>
+      runCommand(async () => {
+        const klap = await requireEnvClient(options.env)
+        const controller = new AbortController()
+        process.on('SIGINT', () => controller.abort())
+        for await (const event of klap.charges.watchEvents(id, controller.signal)) {
+          if (isConfirmationProgressEvent(event)) printConfirmationProgress(event.data)
+          else if (isChargeEvent(event)) printCharge(event.data)
+        }
       }),
     )
 }

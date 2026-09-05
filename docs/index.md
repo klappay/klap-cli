@@ -21,7 +21,7 @@ features:
     details: Store a test and/or live API key locally, with 0600/0700 permissions — auto-detected from the key's own prefix.
     link: /login
   - title: charges
-    details: Create a charge from the terminal and get back a clickable checkoutUrl — no dashboard round-trip.
+    details: Create a charge from the terminal, get back a clickable checkoutUrl, and watch it live with a confirmation progress bar — no dashboard round-trip.
     link: /charges
   - title: sandbox
     details: Simulate any charge lifecycle event — confirmed, partially paid, overpaid, expired, settled — with no real funds involved.
