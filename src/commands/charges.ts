@@ -1,5 +1,5 @@
-import type { AcceptedPayment } from '@klappay/types'
-import { NetworkSchema, TokenSchema } from '@klappay/types'
+import type { AcceptedPayment, ChargeFeePayer } from '@klappay/types'
+import { ChargeFeePayerSchema, NetworkSchema, TokenSchema } from '@klappay/types'
 import type { Command } from 'commander'
 import { requireClient } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment } from '../config'
@@ -9,7 +9,18 @@ type CreateOptions = {
   amount: string
   accept: string[]
   expiresIn: string
+  feePayer?: string
   env?: string
+}
+
+export function parseFeePayer(value: string): ChargeFeePayer {
+  const parsed = ChargeFeePayerSchema.safeParse(value)
+  if (!parsed.success) {
+    throw new Error(
+      `--fee-payer must be one of ${ChargeFeePayerSchema.options.join(', ')}, got "${value}"`,
+    )
+  }
+  return parsed.data
 }
 
 export function parseAcceptedPayment(pair: string): AcceptedPayment {
@@ -50,6 +61,10 @@ export function registerCharges(program: Command): void {
       [] as string[],
     )
     .requiredOption('--expires-in <seconds>', 'Expiry in seconds')
+    .option(
+      '--fee-payer <who>',
+      '"merchant" (default) — the fee comes out of your payout — or "payer", which grosses up --amount so the payer covers it instead',
+    )
     .option('--env <environment>', ENV_FLAG_DESCRIPTION)
     .action((options: CreateOptions) =>
       runCommand(async () => {
@@ -60,6 +75,7 @@ export function registerCharges(program: Command): void {
           currency: 'USD',
           acceptedPayments: options.accept.map(parseAcceptedPayment),
           expiresIn: Number(options.expiresIn),
+          feePayer: options.feePayer ? parseFeePayer(options.feePayer) : undefined,
         })
         printCharge(charge)
       }),

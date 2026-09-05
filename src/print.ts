@@ -27,6 +27,10 @@ export function printCharge(charge: Charge): void {
   console.log(`  settlementStatus:  ${charge.settlementStatus ?? 'null'}`)
   console.log(`  amount:            ${charge.amount}`)
   console.log(`  amountReceived:    ${charge.amountReceived ?? 'null'}`)
+  console.log(
+    `  fee:               ${charge.feeAmount} (${charge.feePercent}%, paid by ${charge.feePayer})`,
+  )
+  console.log(`  merchantAmount:    ${charge.merchantAmount}`)
   console.log(`  acceptedPayments:  ${accepted}`)
   console.log(`  paidWith:          ${paidWith || 'none yet'}`)
   console.log(`  address:           ${charge.address}`)

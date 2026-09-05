@@ -47,6 +47,20 @@ describe('buildChargeFixture', () => {
     expect(live.checkoutUrl).toBe(`https://pay.klappay.com/c/${live.id}`)
   })
 
+  it('deducts the fee from amount when the merchant pays it (default)', () => {
+    const charge = buildChargeFixture({ amount: 100 })
+    expect(charge.feePayer).toBe('merchant')
+    expect(charge.feePercent).toBe(1)
+    expect(charge.feeAmount).toBe(1)
+    expect(charge.merchantAmount).toBe(99)
+  })
+
+  it('leaves merchantAmount equal to amount when the payer covers the fee', () => {
+    const charge = buildChargeFixture({ amount: 100, feePayer: 'payer' })
+    expect(charge.merchantAmount).toBe(100)
+    expect(charge.feeAmount).toBe(1)
+  })
+
   it('only sets settledAt when settlementStatus is completed', () => {
     const failed = buildChargeFixture({ status: 'confirmed', settlementStatus: 'failed' })
     expect(failed.settlementStatus).toBe('failed')

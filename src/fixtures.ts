@@ -2,6 +2,7 @@ import { randomBytes } from 'node:crypto'
 import type {
   AcceptedPayment,
   Charge,
+  ChargeFeePayer,
   ChargeStatus,
   ChargeWebhookEventTypeSchema,
   SettlementStatus,
@@ -17,6 +18,8 @@ export type ChargeFixtureOptions = {
   overpaid?: boolean
   settlementStatus?: SettlementStatus
   environment?: 'test' | 'live'
+  feePayer?: ChargeFeePayer
+  feePercent?: number
 }
 
 function randomAddress(): string {
@@ -55,12 +58,25 @@ export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
   const id = `ch_fixture_${randomBytes(6).toString('hex')}`
   const checkoutDomain = environment === 'live' ? 'pay.klappay.com' : 'pay.stage.klappay.com'
 
+  // ponytail: real fee-tier math lives in klap-core, not reproduced here —
+  // 'merchant' deducts the fee from `amount`, 'payer' leaves `amount` as
+  // the merchant's full take. Close enough for a local fixture's shape.
+  const feePayer = options.feePayer ?? 'merchant'
+  const feePercent = options.feePercent ?? 1
+  const feeAmount = Math.round(amount * (feePercent / 100) * 100) / 100
+  const merchantAmount =
+    feePayer === 'payer' ? amount : Math.round((amount - feeAmount) * 100) / 100
+
   return {
     id,
     amount,
     amountReceived,
     isOverpaid: overpaid,
     currency: 'USD',
+    feePayer,
+    feePercent,
+    feeAmount,
+    merchantAmount,
     acceptedPayments,
     paidWith,
     swapAlternatives: [],

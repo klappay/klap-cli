@@ -3,7 +3,7 @@
 ## `klap fixtures charge`
 
 ```bash
-klap fixtures charge [--status <status>] [--overpaid] [--settlement <status>] [--amount <amount>] [--accept <token:network>] [--env test|live]
+klap fixtures charge [--status <status>] [--overpaid] [--settlement <status>] [--amount <amount>] [--accept <token:network>] [--fee-payer merchant|payer] [--env test|live]
 ```
 
 Prints a realistic `Charge` JSON object to stdout — no API call, no
@@ -36,6 +36,9 @@ klap fixtures charge --status confirmed --amount 100 --accept USDT:optimism
 
 # a live-environment fixture (only changes the environment/checkoutUrl fields)
 klap fixtures charge --status confirmed --env live
+
+# a fixture where the payer covers the fee — merchantAmount equals amount
+klap fixtures charge --amount 100 --fee-payer payer
 ```
 
 ### Sample output
@@ -51,6 +54,10 @@ klap fixtures charge --status confirmed --settlement completed
   "amountReceived": 49.9,
   "isOverpaid": false,
   "currency": "USD",
+  "feePayer": "merchant",
+  "feePercent": 1,
+  "feeAmount": 0.5,
+  "merchantAmount": 49.4,
   "acceptedPayments": [{ "token": "USDC", "network": "base" }],
   "paidWith": [{ "token": "USDC", "network": "base" }],
   "swapAlternatives": [],
@@ -76,4 +83,7 @@ klap fixtures charge --status confirmed --overpaid | jq '.amountReceived'
 
 `--status` defaults to `pending`; `--overpaid` forces a confirmed,
 overpaid charge regardless of `--status`; `--settlement` only takes
-effect once the charge is confirmed.
+effect once the charge is confirmed; `--fee-payer` defaults to
+`merchant` and only changes `feeAmount`/`merchantAmount` (`feePercent`
+is a fixed `1` in every fixture — it's a per-org configured value in
+production, not something to simulate variance for here).

@@ -51,6 +51,8 @@ ch_a1b2c3d4e5
   settlementStatus:  null
   amount:            10
   amountReceived:    null
+  fee:               0.1 (1%, paid by merchant)
+  merchantAmount:    9.9
   acceptedPayments:  USDC:base
   paidWith:          none yet
   address:           0x1234...

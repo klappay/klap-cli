@@ -6,7 +6,7 @@ import {
 } from '@klappay/types'
 import type { Command } from 'commander'
 import { buildChargeFixture } from '../fixtures'
-import { parseAcceptedPayment } from './charges'
+import { parseAcceptedPayment, parseFeePayer } from './charges'
 
 function collect(value: string, previous: string[]): string[] {
   return [...previous, value]
@@ -38,6 +38,7 @@ type ChargeOptions = {
   accept: string[]
   overpaid?: boolean
   settlement?: string
+  feePayer?: string
   env?: string
 }
 
@@ -66,6 +67,10 @@ export function registerFixtures(program: Command): void {
       `One of ${SettlementStatusSchema.options.join(', ')} — only applies once confirmed`,
     )
     .option(
+      '--fee-payer <who>',
+      '"merchant" (default) or "payer" — who the fixture says covers the fee',
+    )
+    .option(
       '--env <environment>',
       "test (default) or live — sets the fixture's environment field only",
     )
@@ -79,6 +84,7 @@ export function registerFixtures(program: Command): void {
         settlementStatus: options.settlement
           ? parseSettlementStatus(options.settlement)
           : undefined,
+        feePayer: options.feePayer ? parseFeePayer(options.feePayer) : undefined,
         environment: options.env === 'live' ? 'live' : 'test',
       })
       console.log(JSON.stringify(charge, null, 2))
