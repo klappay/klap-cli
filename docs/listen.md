@@ -37,6 +37,21 @@ Need to fire a specific event at a handler right now, with no charge,
 no login, and no waiting for `klap listen` to see anything at all? See
 [`klap webhooks trigger`](/webhooks#klap-webhooks-trigger) instead.
 
+## `watch` vs `listen`
+
+The names sound alike but the two commands watch different things:
+
+| | Scope | Shows | Needs |
+|---|---|---|---|
+| [`klap charges watch <id>`](/charges#klap-charges-watch) | One charge's own event stream | That charge's status/settlement changes, plus a confirmation progress bar | Just the charge id |
+| `klap listen [--charge <id>]` | Every webhook event dispatched for your org (optionally filtered to one charge) | Raw webhook payloads as they're dispatched — any event type, not just charge state | Nothing extra, but no confirmation progress bar |
+
+If all you want is "is this specific charge done yet, and how close is
+it," reach for `charges watch` — it's the smaller, purpose-built tool.
+Reach for `listen` when you need every event type (including
+`webhook.*` health events) or plan to forward events with
+`--forward-to`.
+
 ## It is not a tunnel
 
 Tools like ngrok expose your machine to the internet — they open an

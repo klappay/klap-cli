@@ -29,7 +29,7 @@ klap listen
 ```
 
 `klap listen` prints every webhook event for your org live, no
-`--forward-to` required. Pass `--charge <id>` to watch just the one you
+`--forward-to` required. Pass `--charge <id>` to follow just the one you
 just created:
 
 ```bash
@@ -42,6 +42,11 @@ watching them? Add `--forward-to`:
 ```bash
 klap listen --forward-to http://localhost:3000/webhooks
 ```
+
+Only care about one charge's own status and confirmation progress, and
+don't need webhook events at all? `klap charges watch <id>` is simpler —
+no relay, no `--charge` filter, just that charge's stream. See
+[`docs/listen.md`](https://github.com/klappay/klap-cli/tree/main/docs/listen.md#watch-vs-listen).
 
 You can also log in with both a `test` and a `live` key — `klap login`
 auto-detects which is which from the key's own prefix. With both

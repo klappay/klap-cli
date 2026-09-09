@@ -100,6 +100,10 @@ waiting on block confirmations. Unlike `klap logs --tail`, it needs no
 webhook endpoint or `klap listen` relay — just the charge id. Runs until
 the charge reaches a terminal state or you stop it with Ctrl+C.
 
+Not the same tool as `klap listen --charge <id>`: that relays every raw
+webhook event dispatched for your org, filtered to one charge, with no
+confirmation progress bar. See [`watch` vs `listen`](/listen#watch-vs-listen).
+
 ```
  TEST  — sandbox, no real funds
 [#######-------------] 33%  base 4/12 blocks
