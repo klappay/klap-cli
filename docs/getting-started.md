@@ -131,3 +131,14 @@ can pipe straight into your own tests. See [Fixtures](/fixtures).
 - [Webhooks](/webhooks) — registering and managing endpoints
 - [Fixtures](/fixtures) — realistic sample data, offline
 - [Configuration](/configuration) — where credentials are stored
+
+## For LLMs and agents
+
+This site publishes [`llms.txt`](https://cli.klappay.com/llms.txt) — a
+link index of every doc page — and
+[`llms-full.txt`](https://cli.klappay.com/llms-full.txt) — the full
+content of every doc page concatenated into one plain-text file. Point
+an agent, RAG pipeline, or MCP server at either as a lightweight way to
+give it the whole CLI's documentation without scraping HTML. Both
+regenerate on every deploy, so they never drift from what's on this
+page.
