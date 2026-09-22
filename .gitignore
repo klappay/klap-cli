@@ -9,3 +9,6 @@ docs/.vitepress/cache
 .DS_Store
 .claude/settings.local.json
 .claude/scheduled_tasks.lock
+
+# graft's local graph cache — regenerable, not committed (run `graft build`).
+/graft/
