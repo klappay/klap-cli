@@ -6,6 +6,14 @@ describe('parseAcceptedPayment', () => {
     expect(parseAcceptedPayment('USDC:base')).toEqual({ token: 'USDC', network: 'base' })
   })
 
+  it.each([
+    ['USDT:tron', 'USDT', 'tron'],
+    ['USDC:arc', 'USDC', 'arc'],
+    ['USDC:bnb', 'USDC', 'bnb'],
+  ])('accepts %s (tron, arc and bnb pairs)', (pair, token, network) => {
+    expect(parseAcceptedPayment(pair)).toEqual({ token, network })
+  })
+
   it('throws when the pair has no colon', () => {
     expect(() => parseAcceptedPayment('USDC')).toThrow(/TOKEN:NETWORK/)
   })
