@@ -16,7 +16,7 @@
   "bin": {
     "klap": "./dist/cli.js"
   },
-  "files": ["dist", "LICENSE", "README.md", "logo.png", "docs"],
+  "files": ["dist", "LICENSE", "README.md", "docs"],
   "publishConfig": {
     "access": "public"
   },

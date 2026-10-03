@@ -98,7 +98,9 @@ folder — `docs/.vitepress/` lives inside it, not as a parallel copy —
 so editing a `docs/*.md` file changes what the site shows with no sync
 step to remember. The theme (`docs/.vitepress/theme/`) is copied
 byte-for-byte from `../klap-node`/`../klap-checkout-kit` (forced dark,
-pure black/white, no yellow) — don't fork it; if it needs to change,
+`#09090b` ink / `#d9d4cb` brand accent, matching `../klap-core`'s
+rebrand; `docs/public/logo.png`/`favicon.png` come from the same
+place) — don't fork it; if it needs to change,
 change it in all three repos. `pnpm docs:dev` runs it locally, `pnpm
 docs:build` does a static build (fails loudly on a link to a missing
 *file*, which GitHub's Markdown rendering silently doesn't — worth
