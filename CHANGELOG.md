@@ -1,5 +1,12 @@
 # @klappay/cli
 
+## 1.3.2
+
+### Patch Changes
+
+- 158b471: Bump `@klappay/node` to `^5.1.2` and `@klappay/types` to `^5.2.0`. Picks up the `tron` and `arc` networks and USDC/USDT on BNB Chain (`live`) — `klap charges create --accept` validates against `NetworkSchema`/`TokenSchema`, so those pairs are accepted with no CLI change. Everything else in between is additive or internal to the SDK (cross-family `acceptedPayments` rejection is enforced by the API, a `@klappay/types/constants` bundle-size fix); no flag or output changes here.
+- f942424: Updates the README/docs logo, favicon, and docs dark-theme accent to Klappay's new brand. The duplicate root `logo.png` is no longer shipped in the package; the README now points at `docs/public/logo.png`.
+
 ## 1.3.1
 
 ### Patch Changes
