@@ -10,6 +10,12 @@ Thin wrapper over `klap.charges.create()` in `@klappay/node`. `--amount`,
 `--accept`, and `--expires-in` are all required — the API has no
 "any amount"/"never expires" charge.
 
+Every EVM network (Arc included) can be mixed freely across `--accept`
+flags, but `tron` can't be mixed with any of them — a charge pays out to
+one split address predicted up front, and TRON's split contract differs
+from the EVM one, so the API rejects that combination with
+`400 validation_error`.
+
 ```bash
 # $10, USDC on Base, expires in 1 hour
 klap charges create --amount 10 --accept USDC:base --expires-in 3600
