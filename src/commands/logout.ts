@@ -1,7 +1,13 @@
 import type { Command } from 'commander'
 import pc from 'picocolors'
-import type { CliEnvironment } from '../config'
-import { CONFIG_DISPLAY_PATH, clearApiKey, deleteConfig, loadConfig, saveConfig } from '../config'
+import {
+  CONFIG_DISPLAY_PATH,
+  clearApiKey,
+  deleteConfig,
+  loadConfig,
+  parseCliEnvironment,
+  saveConfig,
+} from '../config'
 import { runCommand } from '../print'
 
 export function registerLogout(program: Command): void {
@@ -11,16 +17,12 @@ export function registerLogout(program: Command): void {
     .option('--env <environment>', 'test or live — omit to remove everything')
     .action((options: { env?: string }) =>
       runCommand(async () => {
-        if (!options.env) {
+        const env = parseCliEnvironment(options.env)
+        if (!env) {
           await deleteConfig()
           console.log(pc.green('Logged out.'), `Removed ${CONFIG_DISPLAY_PATH}`)
           return
         }
-
-        if (options.env !== 'test' && options.env !== 'live') {
-          throw new Error('--env must be "test" or "live"')
-        }
-        const env: CliEnvironment = options.env
 
         const config = await loadConfig()
         if (!config || !config.apiKeys[env]) {

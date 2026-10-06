@@ -1,43 +1,46 @@
-import { chmod, mkdir, readFile, rm, writeFile } from 'node:fs/promises'
-import { homedir } from 'node:os'
-import { join } from 'node:path'
-import type { Environment } from '@klappay/types'
+import {
+  CREDENTIALS_DISPLAY_PATH,
+  type KlapCredentialsConfig,
+  KlapCredentialsError,
+  type KlapCredentialsErrorCode,
+  type KlapEnvironment,
+  MissingEnvironmentKeyError,
+  deleteCredentials,
+  detectEnvironment as detectCredentialsEnvironment,
+  loadCredentials,
+  saveCredentials,
+  setApiKey as setCredentialsApiKey,
+} from './credentials'
 
-export type CliEnvironment = Environment
+export { clearApiKey } from './credentials'
 
-export const CONFIG_DISPLAY_PATH = '~/.klap/config.json'
+export type CliEnvironment = KlapEnvironment
+export type KlapCliConfig = KlapCredentialsConfig
+
+export const CONFIG_DISPLAY_PATH = CREDENTIALS_DISPLAY_PATH
 export const LOGIN_HINT = 'Not logged in — run `klap login --api-key <key> --base-url <url>` first.'
 export const ENV_FLAG_DESCRIPTION = 'test or live — required if both are configured'
 export const ENV_FLAG_DESCRIPTION_SANDBOX = `${ENV_FLAG_DESCRIPTION} (server rejects live)`
 
-export type KlapCliConfig = {
-  baseUrl: string
-  apiKeys: Partial<Record<CliEnvironment, string>>
+const CREDENTIALS_ERROR_MESSAGES: Record<KlapCredentialsErrorCode, string> = {
+  invalid_api_key_prefix: 'API key must start with "klap_test_" or "klap_live_".',
+  invalid_credentials_file: `${CONFIG_DISPLAY_PATH} is corrupted or invalid — run \`klap logout\` to remove it, then \`klap login --api-key <key> --base-url <url>\` again.`,
+  credentials_path_symlink: `Refusing to use ${CONFIG_DISPLAY_PATH}: ~/.klap or the file itself is a symbolic link. Remove the link and re-run \`klap login --api-key <key> --base-url <url>\` to create a real ~/.klap directory.`,
+  no_credentials: LOGIN_HINT,
+  missing_environment_key: LOGIN_HINT,
+  ambiguous_environment:
+    'Both a test and a live key are configured — pass --env test or --env live to choose.',
 }
 
-type LegacyKlapCliConfig = {
-  apiKey: string
-  baseUrl: string
+export function cliCredentialsMessage(err: KlapCredentialsError): string {
+  if (err instanceof MissingEnvironmentKeyError) {
+    return `No ${err.environment} key configured. Run \`klap login --api-key klap_${err.environment}_... --base-url <url>\`.`
+  }
+  return CREDENTIALS_ERROR_MESSAGES[err.code]
 }
 
-function isLegacyConfig(value: unknown): value is LegacyKlapCliConfig {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    !('apiKeys' in value) &&
-    'apiKey' in value &&
-    typeof (value as { apiKey: unknown }).apiKey === 'string'
-  )
-}
-
-function isKlapCliConfig(value: unknown): value is KlapCliConfig {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    typeof (value as { baseUrl: unknown }).baseUrl === 'string' &&
-    typeof (value as { apiKeys: unknown }).apiKeys === 'object' &&
-    (value as { apiKeys: unknown }).apiKeys !== null
-  )
+export function rethrowAsCliError(err: unknown): never {
+  throw err instanceof KlapCredentialsError ? new Error(cliCredentialsMessage(err)) : err
 }
 
 export function parseCliEnvironment(value: string | undefined): CliEnvironment | undefined {
@@ -48,42 +51,36 @@ export function parseCliEnvironment(value: string | undefined): CliEnvironment |
   return value
 }
 
-export function detectEnvironment(apiKey: string): CliEnvironment {
-  if (apiKey.startsWith('klap_test_')) return 'test'
-  if (apiKey.startsWith('klap_live_')) return 'live'
-  throw new Error(
-    `API key must start with "klap_test_" or "klap_live_" — got "${apiKey.slice(0, 10)}...".`,
-  )
-}
-
-function configPath(): string {
-  return join(homedir(), '.klap', 'config.json')
-}
-
-export async function loadConfig(): Promise<KlapCliConfig | null> {
+function withCliErrors<T>(action: () => T): T {
   try {
-    const raw = await readFile(configPath(), 'utf8')
-    const parsed: unknown = JSON.parse(raw)
-    if (isLegacyConfig(parsed)) {
-      return {
-        baseUrl: parsed.baseUrl,
-        apiKeys: { [detectEnvironment(parsed.apiKey)]: parsed.apiKey },
-      }
-    }
-    return isKlapCliConfig(parsed) ? parsed : null
-  } catch {
-    return null
+    return action()
+  } catch (err) {
+    rethrowAsCliError(err)
   }
 }
 
-export async function saveConfig(config: KlapCliConfig): Promise<void> {
-  const path = configPath()
-  const dir = join(path, '..')
+export function detectEnvironment(apiKey: string): CliEnvironment {
+  return withCliErrors(() => detectCredentialsEnvironment(apiKey))
+}
 
-  await mkdir(dir, { recursive: true })
-  await chmod(dir, 0o700)
-  await writeFile(path, `${JSON.stringify(config, null, 2)}\n`, 'utf8')
-  await chmod(path, 0o600)
+export function setApiKey(
+  config: KlapCliConfig | null,
+  baseUrl: string,
+  apiKey: string,
+): KlapCliConfig {
+  return withCliErrors(() => setCredentialsApiKey(config, baseUrl, apiKey))
+}
+
+export function loadConfig(): Promise<KlapCliConfig | null> {
+  return loadCredentials().catch(rethrowAsCliError)
+}
+
+export function saveConfig(config: KlapCliConfig): Promise<void> {
+  return saveCredentials(config).catch(rethrowAsCliError)
+}
+
+export function deleteConfig(): Promise<void> {
+  return deleteCredentials().catch(rethrowAsCliError)
 }
 
 export async function requireConfig(): Promise<KlapCliConfig> {
@@ -93,23 +90,4 @@ export async function requireConfig(): Promise<KlapCliConfig> {
     process.exit(1)
   }
   return config
-}
-
-export function setApiKey(
-  config: KlapCliConfig | null,
-  baseUrl: string,
-  apiKey: string,
-): KlapCliConfig {
-  const env = detectEnvironment(apiKey)
-  return { baseUrl, apiKeys: { ...config?.apiKeys, [env]: apiKey } }
-}
-
-export function clearApiKey(config: KlapCliConfig, env: CliEnvironment): KlapCliConfig {
-  const apiKeys = { ...config.apiKeys }
-  delete apiKeys[env]
-  return { ...config, apiKeys }
-}
-
-export async function deleteConfig(): Promise<void> {
-  await rm(configPath(), { force: true })
 }

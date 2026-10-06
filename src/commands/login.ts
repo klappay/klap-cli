@@ -1,6 +1,12 @@
 import type { Command } from 'commander'
 import pc from 'picocolors'
-import { CONFIG_DISPLAY_PATH, loadConfig, saveConfig, setApiKey } from '../config'
+import {
+  CONFIG_DISPLAY_PATH,
+  detectEnvironment,
+  loadConfig,
+  saveConfig,
+  setApiKey,
+} from '../config'
 import { runCommand } from '../print'
 
 function readStdin(): Promise<string> {
@@ -51,7 +57,7 @@ export function registerLogin(program: Command): void {
         const config = setApiKey(existing, options.baseUrl, apiKey)
         await saveConfig(config)
 
-        const env = apiKey.startsWith('klap_test_') ? 'test' : 'live'
+        const env = detectEnvironment(apiKey)
         const otherEnv = env === 'test' ? 'live' : 'test'
         const otherConfigured = Boolean(config.apiKeys[otherEnv])
 

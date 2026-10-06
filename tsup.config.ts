@@ -1,10 +1,20 @@
 import { defineConfig } from 'tsup'
 
-export default defineConfig({
-  entry: ['src/cli.ts'],
+const shared = {
   format: ['esm'],
   platform: 'node',
-  banner: { js: '#!/usr/bin/env node' },
-  clean: true,
   sourcemap: true,
-})
+} as const
+
+export default defineConfig([
+  {
+    ...shared,
+    entry: { cli: 'src/cli.ts' },
+    banner: { js: '#!/usr/bin/env node' },
+  },
+  {
+    ...shared,
+    entry: { credentials: 'src/credentials/index.ts' },
+    dts: { entry: { credentials: 'src/credentials/index.ts' } },
+  },
+])

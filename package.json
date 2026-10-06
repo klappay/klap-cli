@@ -16,12 +16,19 @@
   "bin": {
     "klap": "./dist/cli.js"
   },
+  "exports": {
+    "./credentials": {
+      "types": "./dist/credentials.d.ts",
+      "import": "./dist/credentials.js"
+    },
+    "./package.json": "./package.json"
+  },
   "files": ["dist", "LICENSE", "README.md", "docs"],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
-    "build": "tsup",
+    "build": "rm -rf dist && tsup",
     "dev": "tsup --watch",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

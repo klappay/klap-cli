@@ -47,3 +47,9 @@ Running it with no `--env` deletes `~/.klap/config.json` entirely. With
 `--env`, only that one key is cleared — the other environment (and
 `baseUrl`) stays intact, so you don't have to log back in for the key
 you're keeping.
+
+`klap logout` (with no `--env`) is also the fix when a command reports
+that `~/.klap/config.json` is corrupted or invalid: it removes the file
+without needing to read it, so `klap login` can start fresh afterward.
+Neither command follows a symlinked `~/.klap` — see
+[Configuration](/configuration#security-notes).

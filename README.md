@@ -73,7 +73,7 @@ versions of these docs, regenerated on every deploy, for feeding an agent or MCP
 | [`docs/logs.md`](https://github.com/klappay/klap-cli/tree/main/docs/logs.md) | Timelines and live tailing |
 | [`docs/webhooks.md`](https://github.com/klappay/klap-cli/tree/main/docs/webhooks.md) | Registering and managing webhook endpoints |
 | [`docs/fixtures.md`](https://github.com/klappay/klap-cli/tree/main/docs/fixtures.md) | Realistic sample `Charge` data — no API call, no testnet funds |
-| [`docs/configuration.md`](https://github.com/klappay/klap-cli/tree/main/docs/configuration.md) | Where credentials are stored locally |
+| [`docs/configuration.md`](https://github.com/klappay/klap-cli/tree/main/docs/configuration.md) | Where credentials are stored locally, and reading them from your own tools via `@klappay/cli/credentials` |
 
 ## License
 
