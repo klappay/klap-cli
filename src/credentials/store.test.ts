@@ -28,7 +28,7 @@ let homeDir: string
 let originalHome: string | undefined
 
 beforeEach(async () => {
-  homeDir = await mkdtemp(join(tmpdir(), 'klap-node-credentials-test-'))
+  homeDir = await mkdtemp(join(tmpdir(), 'klap-cli-credentials-test-'))
   originalHome = process.env.HOME
   process.env.HOME = homeDir
 })

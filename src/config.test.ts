@@ -18,6 +18,7 @@ import {
   AmbiguousEnvironmentError,
   InvalidApiKeyPrefixError,
   InvalidCredentialsFileError,
+  KlapCredentialsError,
   MissingEnvironmentKeyError,
   NoCredentialsError,
   SymlinkedCredentialsPathError,
@@ -42,6 +43,12 @@ describe('cliCredentialsMessage', () => {
     expect(cliCredentialsMessage(new MissingEnvironmentKeyError('test'))).toBe(
       'No test key configured. Run `klap login --api-key klap_test_... --base-url <url>`.',
     )
+  })
+
+  it('falls back to the login hint for a base-class missing-key error with no environment', () => {
+    expect(
+      cliCredentialsMessage(new KlapCredentialsError('missing_environment_key', 'no env')),
+    ).toBe(LOGIN_HINT)
   })
 
   it('maps no credentials to the login hint', () => {

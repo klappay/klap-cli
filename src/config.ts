@@ -22,21 +22,26 @@ export const LOGIN_HINT = 'Not logged in — run `klap login --api-key <key> --b
 export const ENV_FLAG_DESCRIPTION = 'test or live — required if both are configured'
 export const ENV_FLAG_DESCRIPTION_SANDBOX = `${ENV_FLAG_DESCRIPTION} (server rejects live)`
 
-const CREDENTIALS_ERROR_MESSAGES: Record<KlapCredentialsErrorCode, string> = {
+type StaticMessageCode = Exclude<KlapCredentialsErrorCode, 'missing_environment_key'>
+
+const CREDENTIALS_ERROR_MESSAGES: Record<StaticMessageCode, string> = {
   invalid_api_key_prefix: 'API key must start with "klap_test_" or "klap_live_".',
   invalid_credentials_file: `${CONFIG_DISPLAY_PATH} is corrupted or invalid — run \`klap logout\` to remove it, then \`klap login --api-key <key> --base-url <url>\` again.`,
   credentials_path_symlink: `Refusing to use ${CONFIG_DISPLAY_PATH}: ~/.klap or the file itself is a symbolic link. Remove the link and re-run \`klap login --api-key <key> --base-url <url>\` to create a real ~/.klap directory.`,
   no_credentials: LOGIN_HINT,
-  missing_environment_key: LOGIN_HINT,
   ambiguous_environment:
     'Both a test and a live key are configured — pass --env test or --env live to choose.',
+}
+
+function hasStaticMessage(code: KlapCredentialsErrorCode): code is StaticMessageCode {
+  return code !== 'missing_environment_key'
 }
 
 export function cliCredentialsMessage(err: KlapCredentialsError): string {
   if (err instanceof MissingEnvironmentKeyError) {
     return `No ${err.environment} key configured. Run \`klap login --api-key klap_${err.environment}_... --base-url <url>\`.`
   }
-  return CREDENTIALS_ERROR_MESSAGES[err.code]
+  return hasStaticMessage(err.code) ? CREDENTIALS_ERROR_MESSAGES[err.code] : LOGIN_HINT
 }
 
 export function rethrowAsCliError(err: unknown): never {
