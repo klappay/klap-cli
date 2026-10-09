@@ -1,5 +1,11 @@
 # @klappay/cli
 
+## 1.4.1
+
+### Patch Changes
+
+- 930b6f5: Bump `@klappay/types` to 6.0.1.
+
 ## 1.4.0
 
 ### Minor Changes
