@@ -1,5 +1,12 @@
 # @klappay/cli
 
+## 1.4.2
+
+### Patch Changes
+
+- b512e12: Bump `@klappay/node` to 5.2.0.
+- b512e12: Bump `@klappay/types` to 6.1.0.
+
 ## 1.4.1
 
 ### Patch Changes
