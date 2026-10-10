@@ -4,6 +4,7 @@ import { ChargeFeePayerSchema, NetworkSchema, TokenSchema } from '@klappay/types
 import type { Command } from 'commander'
 import { requireEnvClient } from '../client'
 import { ENV_FLAG_DESCRIPTION } from '../config'
+import { runUntilInterrupted } from '../interrupt'
 import { printCharge, printConfirmationProgress, runCommand } from '../print'
 
 type CreateOptions = {
@@ -90,12 +91,12 @@ export function registerCharges(program: Command): void {
     .action((id: string, options: { env?: string }) =>
       runCommand(async () => {
         const klap = await requireEnvClient(options.env)
-        const controller = new AbortController()
-        process.on('SIGINT', () => controller.abort())
-        for await (const event of klap.charges.watchEvents(id, controller.signal)) {
-          if (isConfirmationProgressEvent(event)) printConfirmationProgress(event.data)
-          else if (isChargeEvent(event)) printCharge(event.data)
-        }
+        await runUntilInterrupted(async (signal) => {
+          for await (const event of klap.charges.watchEvents(id, signal)) {
+            if (isConfirmationProgressEvent(event)) printConfirmationProgress(event.data)
+            else if (isChargeEvent(event)) printCharge(event.data)
+          }
+        })
       }),
     )
 }

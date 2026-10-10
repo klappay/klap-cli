@@ -1,6 +1,7 @@
 import type { Command } from 'commander'
 import { requireEnvClient, resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
+import { runUntilInterrupted } from '../interrupt'
 import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
 
@@ -31,15 +32,14 @@ export function registerLogs(program: Command): void {
         const resolved = resolveApiKey(config, env)
         printEnvironmentBanner(resolved.env)
 
-        const controller = new AbortController()
-        process.on('SIGINT', () => controller.abort())
-
-        for await (const evt of connectToRelay(config.baseUrl, resolved.key, controller.signal)) {
-          if (evt.type !== 'webhook') continue
-          const chargeId = extractChargeId(evt.payload.data)
-          if (options.charge && chargeId !== options.charge) continue
-          printRelayEvent(evt.payload, chargeId)
-        }
+        await runUntilInterrupted(async (signal) => {
+          for await (const evt of connectToRelay(config.baseUrl, resolved.key, signal)) {
+            if (evt.type !== 'webhook') continue
+            const chargeId = extractChargeId(evt.payload.data)
+            if (options.charge && chargeId !== options.charge) continue
+            printRelayEvent(evt.payload, chargeId)
+          }
+        })
       }),
     )
 }

@@ -2,6 +2,7 @@ import type { Command } from 'commander'
 import pc from 'picocolors'
 import { resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
+import { runUntilInterrupted } from '../interrupt'
 import { printDeliveryResult, printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
 import { deliverWebhook } from '../webhook-delivery'
@@ -24,36 +25,35 @@ export function registerListen(program: Command): void {
         const { key, env } = resolveApiKey(config, parseCliEnvironment(options.env))
         printEnvironmentBanner(env)
 
-        const controller = new AbortController()
-        process.on('SIGINT', () => controller.abort())
-
         console.log(pc.dim('Connecting...'))
         let secret = ''
 
-        for await (const evt of connectToRelay(config.baseUrl, key, controller.signal)) {
-          if (evt.type === 'session') {
-            secret = evt.secret
-            console.log(
-              pc.green('Ready!'),
-              options.forwardTo
-                ? `Forwarding events to ${options.forwardTo}`
-                : 'Listening for events',
-            )
-            if (options.forwardTo) console.log(pc.dim(`Signing secret: ${secret}`))
-            continue
+        await runUntilInterrupted(async (signal) => {
+          for await (const evt of connectToRelay(config.baseUrl, key, signal)) {
+            if (evt.type === 'session') {
+              secret = evt.secret
+              console.log(
+                pc.green('Ready!'),
+                options.forwardTo
+                  ? `Forwarding events to ${options.forwardTo}`
+                  : 'Listening for events',
+              )
+              if (options.forwardTo) console.log(pc.dim(`Signing secret: ${secret}`))
+              continue
+            }
+
+            const chargeId = extractChargeId(evt.payload.data)
+            if (options.charge && chargeId !== options.charge) continue
+
+            if (!options.forwardTo) {
+              printRelayEvent(evt.payload, chargeId)
+              continue
+            }
+
+            const result = await deliverWebhook(options.forwardTo, evt.payload, secret)
+            printDeliveryResult(evt.payload.event, result)
           }
-
-          const chargeId = extractChargeId(evt.payload.data)
-          if (options.charge && chargeId !== options.charge) continue
-
-          if (!options.forwardTo) {
-            printRelayEvent(evt.payload, chargeId)
-            continue
-          }
-
-          const result = await deliverWebhook(options.forwardTo, evt.payload, secret)
-          printDeliveryResult(evt.payload.event, result)
-        }
+        })
       }),
     )
 }
