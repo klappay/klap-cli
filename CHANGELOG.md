@@ -1,5 +1,12 @@
 # @klappay/cli
 
+## 1.4.3
+
+### Patch Changes
+
+- f1515c7: `klap charges watch`, `klap listen` and `klap logs --tail` now exit cleanly (code 0, no output) when stopped with Ctrl+C, as the docs already said. Previously the cancelled stream surfaced as an error: they printed `This operation was aborted` and exited with code 1. Any other error while streaming still fails as before.
+- ee99bac: The "not logged in", "no live/test key", corrupted-config and symlinked-config errors now suggest piping the key into `klap login --api-key - --base-url <url>` instead of `klap login --api-key <key> ...`, so following the hint no longer leaves the key in shell history or a process listing.
+
 ## 1.4.2
 
 ### Patch Changes
