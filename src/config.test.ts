@@ -25,9 +25,9 @@ import {
 } from './credentials'
 
 const CORRUPT_MESSAGE =
-  '~/.klap/config.json is corrupted or invalid — run `klap logout` to remove it, then `klap login --api-key <key> --base-url <url>` again.'
+  '~/.klap/config.json is corrupted or invalid — run `klap logout` to remove it, then pipe your key into `klap login --api-key - --base-url <url>` again.'
 const SYMLINK_MESSAGE =
-  'Refusing to use ~/.klap/config.json: ~/.klap or the file itself is a symbolic link. Remove the link and re-run `klap login --api-key <key> --base-url <url>` to create a real ~/.klap directory.'
+  'Refusing to use ~/.klap/config.json: ~/.klap or the file itself is a symbolic link. Remove the link and pipe your key into `klap login --api-key - --base-url <url>` again to create a real ~/.klap directory.'
 
 describe('cliCredentialsMessage', () => {
   it('maps an ambiguous environment to the --env hint', () => {
@@ -38,11 +38,25 @@ describe('cliCredentialsMessage', () => {
 
   it('maps a missing environment key to a login command for that exact environment', () => {
     expect(cliCredentialsMessage(new MissingEnvironmentKeyError('live'))).toBe(
-      'No live key configured. Run `klap login --api-key klap_live_... --base-url <url>`.',
+      'No live key configured. Pipe a klap_live_ key into `klap login --api-key - --base-url <url>`.',
     )
     expect(cliCredentialsMessage(new MissingEnvironmentKeyError('test'))).toBe(
-      'No test key configured. Run `klap login --api-key klap_test_... --base-url <url>`.',
+      'No test key configured. Pipe a klap_test_ key into `klap login --api-key - --base-url <url>`.',
     )
+  })
+
+  it('never suggests putting the key itself on the command line', () => {
+    const messages = [
+      LOGIN_HINT,
+      cliCredentialsMessage(new MissingEnvironmentKeyError('live')),
+      cliCredentialsMessage(new MissingEnvironmentKeyError('test')),
+      cliCredentialsMessage(new InvalidCredentialsFileError()),
+      cliCredentialsMessage(new SymlinkedCredentialsPathError()),
+    ]
+    for (const message of messages) {
+      expect(message).toContain('--api-key - ')
+      expect(message).not.toMatch(/--api-key (<key>|klap_)/)
+    }
   })
 
   it('falls back to the login hint for a base-class missing-key error with no environment', () => {

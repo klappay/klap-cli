@@ -18,7 +18,8 @@ export type CliEnvironment = KlapEnvironment
 export type KlapCliConfig = KlapCredentialsConfig
 
 export const CONFIG_DISPLAY_PATH = CREDENTIALS_DISPLAY_PATH
-export const LOGIN_HINT = 'Not logged in — run `klap login --api-key <key> --base-url <url>` first.'
+const LOGIN_COMMAND = '`klap login --api-key - --base-url <url>`'
+export const LOGIN_HINT = `Not logged in — pipe your key into ${LOGIN_COMMAND} first.`
 export const ENV_FLAG_DESCRIPTION = 'test or live — required if both are configured'
 export const ENV_FLAG_DESCRIPTION_SANDBOX = `${ENV_FLAG_DESCRIPTION} (server rejects live)`
 
@@ -26,8 +27,8 @@ type StaticMessageCode = Exclude<KlapCredentialsErrorCode, 'missing_environment_
 
 const CREDENTIALS_ERROR_MESSAGES: Record<StaticMessageCode, string> = {
   invalid_api_key_prefix: 'API key must start with "klap_test_" or "klap_live_".',
-  invalid_credentials_file: `${CONFIG_DISPLAY_PATH} is corrupted or invalid — run \`klap logout\` to remove it, then \`klap login --api-key <key> --base-url <url>\` again.`,
-  credentials_path_symlink: `Refusing to use ${CONFIG_DISPLAY_PATH}: ~/.klap or the file itself is a symbolic link. Remove the link and re-run \`klap login --api-key <key> --base-url <url>\` to create a real ~/.klap directory.`,
+  invalid_credentials_file: `${CONFIG_DISPLAY_PATH} is corrupted or invalid — run \`klap logout\` to remove it, then pipe your key into ${LOGIN_COMMAND} again.`,
+  credentials_path_symlink: `Refusing to use ${CONFIG_DISPLAY_PATH}: ~/.klap or the file itself is a symbolic link. Remove the link and pipe your key into ${LOGIN_COMMAND} again to create a real ~/.klap directory.`,
   no_credentials: LOGIN_HINT,
   ambiguous_environment:
     'Both a test and a live key are configured — pass --env test or --env live to choose.',
@@ -39,7 +40,7 @@ function hasStaticMessage(code: KlapCredentialsErrorCode): code is StaticMessage
 
 export function cliCredentialsMessage(err: KlapCredentialsError): string {
   if (err instanceof MissingEnvironmentKeyError) {
-    return `No ${err.environment} key configured. Run \`klap login --api-key klap_${err.environment}_... --base-url <url>\`.`
+    return `No ${err.environment} key configured. Pipe a klap_${err.environment}_ key into ${LOGIN_COMMAND}.`
   }
   return hasStaticMessage(err.code) ? CREDENTIALS_ERROR_MESSAGES[err.code] : LOGIN_HINT
 }

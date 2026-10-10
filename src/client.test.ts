@@ -36,7 +36,7 @@ describe('resolveApiKey', () => {
   it('names the exact klap login command if --env is given but that environment is not configured', () => {
     const config: KlapCliConfig = { baseUrl: BASE_URL, apiKeys: { test: 'klap_test_abc' } }
     expect(() => resolveApiKey(config, 'live')).toThrow(
-      'No live key configured. Run `klap login --api-key klap_live_... --base-url <url>`.',
+      'No live key configured. Pipe a klap_live_ key into `klap login --api-key - --base-url <url>`.',
     )
   })
 })
