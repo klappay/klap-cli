@@ -1,6 +1,7 @@
 import { KlapApiError } from '@klappay/node'
 import type {
   Charge,
+  CheckChargeResponse,
   ConfirmationProgress,
   Webhook,
   WebhookDelivery,
@@ -43,6 +44,31 @@ export function printCharge(charge: Charge): void {
 
 export function formatChargeRow(charge: Charge): string {
   return `${charge.id}  ${charge.status.padEnd(14)}  ${String(charge.amount).padStart(10)} ${charge.currency}  ${charge.createdAt}`
+}
+
+type PayerEvidence = Pick<
+  CheckChargeResponse,
+  'transactionSender' | 'tokenSenders' | 'userOperationSenders'
+>
+
+export function formatPayerEvidence(evidence: PayerEvidence): string[] {
+  if (evidence.transactionSender === null) {
+    return [
+      '  payer evidence:    none (pass --tx-hash and --network for a transaction that paid this charge)',
+    ]
+  }
+  return [
+    '  payer evidence:',
+    `    transactionSender:     ${evidence.transactionSender}`,
+    `    tokenSenders:          ${evidence.tokenSenders.join(', ') || 'none'}`,
+    `    userOperationSenders:  ${evidence.userOperationSenders.join(', ') || 'none'}`,
+  ]
+}
+
+export function printCheckedCharge(result: CheckChargeResponse): void {
+  if (result.confirmationProgress) printConfirmationProgress(result.confirmationProgress)
+  printCharge(result)
+  for (const line of formatPayerEvidence(result)) console.log(line)
 }
 
 const PROGRESS_BAR_WIDTH = 20

@@ -147,6 +147,60 @@ Every flag is validated against `@klappay/types`'s own schema before
 any request is sent, so a typo'd status or a malformed date fails
 locally with the flag's name in the error.
 
+## `klap charges check`
+
+```bash
+klap charges check <id> [--tx-hash <hash> --network <network>] [--env test|live]
+```
+
+Thin wrapper over `klap.charges.check()`: asks the API to look for
+payments to this charge on-chain right now instead of waiting for its
+background scan, then prints the result. Use it when a payment was sent
+but the charge hasn't moved yet.
+
+Pass `--tx-hash` and `--network` together (one without the other is
+rejected) when you already know the paying transaction. The check then
+costs a single RPC call instead of a block scan, and the output also
+shows **who paid**:
+
+```bash
+klap charges check ch_a1b2c3d4e5 \
+  --tx-hash 0x9f8e7d6c5b4a39281706f5e4d3c2b1a09f8e7d6c5b4a39281706f5e4d3c2b1a0 \
+  --network base
+```
+
+```
+ TEST  — sandbox, no real funds
+ch_a1b2c3d4e5
+  status:            confirmed
+  ...
+  checkoutUrl:       https://pay.stage.klappay.com/c/ch_a1b2c3d4e5
+  payer evidence:
+    transactionSender:     0x1111111111111111111111111111111111111111
+    tokenSenders:          0x2222222222222222222222222222222222222222
+    userOperationSenders:  none
+```
+
+- **`transactionSender`** — whoever signed and submitted the
+  transaction. That's the payer for an ordinary wallet, but it's the
+  relayer or bundler when someone else submitted it for them.
+- **`tokenSenders`** — where the paying token transfers actually came
+  from. Covers a wallet whose transaction was relayed (e.g. an EIP-7702
+  smart account behind a gas-sponsoring relayer). For a swap-to-pay
+  this is the router, not the payer.
+- **`userOperationSenders`** — the ERC-4337 smart account whose own
+  user operation paid, when a bundler submitted it.
+
+All three are evidence, not identity: Klappay doesn't decide who the
+payer is. They're only filled in when the hinted transaction actually
+paid this charge; otherwise the output says `payer evidence: none`.
+It's safe to re-run with the same hint after the charge is `confirmed`
+to learn who paid.
+
+If a detected transfer is still short of its network's confirmation
+depth, the same progress bar as `klap charges watch` is printed above
+the charge.
+
 ## `klap charges watch`
 
 ```bash

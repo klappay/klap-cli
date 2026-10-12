@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { parseAcceptedPayment, parseFeePayer, parseListChargesOptions } from './charges'
+import {
+  parseAcceptedPayment,
+  parseCheckChargeOptions,
+  parseFeePayer,
+  parseListChargesOptions,
+} from './charges'
 
 describe('parseAcceptedPayment', () => {
   it('parses a valid TOKEN:NETWORK pair', () => {
@@ -86,5 +91,38 @@ describe('parseListChargesOptions', () => {
 
   it('rejects a --since that is not an ISO datetime', () => {
     expect(() => parseListChargesOptions({ since: 'yesterday' })).toThrow(/^--since: /)
+  })
+})
+
+describe('parseCheckChargeOptions', () => {
+  const txHash = `0x${'ab'.repeat(32)}`
+
+  it('accepts no hint at all', () => {
+    expect(parseCheckChargeOptions({})).toEqual({})
+  })
+
+  it('accepts --tx-hash together with --network', () => {
+    expect(parseCheckChargeOptions({ txHash, network: 'base' })).toEqual({
+      txHash,
+      network: 'base',
+    })
+  })
+
+  it('rejects --tx-hash without --network', () => {
+    expect(() => parseCheckChargeOptions({ txHash })).toThrow(/must be passed together/)
+  })
+
+  it('rejects --network without --tx-hash', () => {
+    expect(() => parseCheckChargeOptions({ network: 'base' })).toThrow(/must be passed together/)
+  })
+
+  it('rejects a --tx-hash that is not 32 bytes of hex', () => {
+    expect(() => parseCheckChargeOptions({ txHash: '0x1234', network: 'base' })).toThrow(
+      /^--tx-hash: /,
+    )
+  })
+
+  it('rejects an unknown --network', () => {
+    expect(() => parseCheckChargeOptions({ txHash, network: 'solana' })).toThrow(/^--network: /)
   })
 })

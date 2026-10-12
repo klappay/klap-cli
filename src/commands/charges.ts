@@ -1,8 +1,14 @@
 import { isChargeEvent, isConfirmationProgressEvent } from '@klappay/node'
-import type { AcceptedPayment, ChargeFeePayer, ListChargesInput } from '@klappay/types'
+import type {
+  AcceptedPayment,
+  ChargeFeePayer,
+  CheckChargeRequest,
+  ListChargesInput,
+} from '@klappay/types'
 import {
   ChargeFeePayerSchema,
   ChargeStatusSchema,
+  CheckChargeRequestSchema,
   ListChargesSchema,
   NetworkSchema,
   TokenSchema,
@@ -12,7 +18,13 @@ import pc from 'picocolors'
 import { requireEnvClient } from '../client'
 import { ENV_FLAG_DESCRIPTION } from '../config'
 import { runUntilInterrupted } from '../interrupt'
-import { formatChargeRow, printCharge, printConfirmationProgress, runCommand } from '../print'
+import {
+  formatChargeRow,
+  printCharge,
+  printCheckedCharge,
+  printConfirmationProgress,
+  runCommand,
+} from '../print'
 
 type CreateOptions = {
   amount: string
@@ -63,6 +75,12 @@ type ListOptions = {
   env?: string
 }
 
+type CheckOptions = {
+  txHash?: string
+  network?: string
+  env?: string
+}
+
 type FlagIssue = { path: (string | number)[]; message: string }
 
 function describeFlagIssues(
@@ -100,6 +118,28 @@ export function parseListChargesOptions(options: ListOptions): ListChargesInput 
   })
   if (!parsed.success) {
     throw new Error(describeFlagIssues(parsed.error.issues, LIST_FLAGS, 'invalid list filter'))
+  }
+  return parsed.data
+}
+
+const CHECK_FLAGS: Record<string, string> = {
+  txHash: '--tx-hash',
+  network: '--network',
+}
+
+export function parseCheckChargeOptions(options: CheckOptions): CheckChargeRequest {
+  const parsed = CheckChargeRequestSchema.safeParse({
+    txHash: options.txHash,
+    network: options.network,
+  })
+  if (!parsed.success) {
+    throw new Error(
+      describeFlagIssues(
+        parsed.error.issues,
+        CHECK_FLAGS,
+        '--tx-hash and --network must be passed together, or both omitted',
+      ),
+    )
   }
   return parsed.data
 }
@@ -182,6 +222,22 @@ export function registerCharges(program: Command): void {
             pc.dim(`More results — rerun with the same filters plus --cursor ${page.nextCursor}`),
           )
         }
+      }),
+    )
+
+  charges
+    .command('check <id>')
+    .description(
+      'Ask the API to re-check a charge on-chain now — with --tx-hash/--network, also shows who paid',
+    )
+    .option('--tx-hash <hash>', 'Transaction hash that paid the charge (requires --network)')
+    .option('--network <network>', 'Network --tx-hash is on, e.g. base (requires --tx-hash)')
+    .option('--env <environment>', ENV_FLAG_DESCRIPTION)
+    .action((id: string, options: CheckOptions) =>
+      runCommand(async () => {
+        const input = parseCheckChargeOptions(options)
+        const klap = await requireEnvClient(options.env)
+        printCheckedCharge(await klap.charges.check(id, input))
       }),
     )
 

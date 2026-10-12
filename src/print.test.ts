@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { buildChargeFixture } from './fixtures'
-import { formatChargeRow, formatConfirmationProgress } from './print'
+import { formatChargeRow, formatConfirmationProgress, formatPayerEvidence } from './print'
 
 describe('formatConfirmationProgress', () => {
   it('renders an empty bar at 0%', () => {
@@ -31,6 +31,32 @@ describe('formatConfirmationProgress', () => {
       blocksRequired: 12,
     })
     expect(line).toBe('[#######-------------] 33%  ethereum 4/12 blocks')
+  })
+})
+
+describe('formatPayerEvidence', () => {
+  it('prints a single hint line when the check had no paying transaction', () => {
+    const lines = formatPayerEvidence({
+      transactionSender: null,
+      tokenSenders: [],
+      userOperationSenders: [],
+    })
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toMatch(/none \(pass --tx-hash and --network/)
+  })
+
+  it('lists every sender when a relayed transaction paid', () => {
+    const lines = formatPayerEvidence({
+      transactionSender: '0xRelayer',
+      tokenSenders: ['0xWalletA', '0xWalletB'],
+      userOperationSenders: [],
+    })
+    expect(lines).toEqual([
+      '  payer evidence:',
+      '    transactionSender:     0xRelayer',
+      '    tokenSenders:          0xWalletA, 0xWalletB',
+      '    userOperationSenders:  none',
+    ])
   })
 })
 
