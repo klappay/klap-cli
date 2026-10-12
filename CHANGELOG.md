@@ -1,5 +1,12 @@
 # @klappay/cli
 
+## 1.5.0
+
+### Minor Changes
+
+- 8a0c361: Add `klap charges check <id> [--tx-hash <hash> --network <network>]`, which asks the API to re-check a charge on-chain now. With a transaction hint it also prints the payer evidence `@klappay/types` 6.1.0 added: `transactionSender`, `tokenSenders` and `userOperationSenders`.
+- cd6eee9: Add `klap charges get <id>` and `klap charges list` (filters by `--status`/`--token`/`--network`/`--since`/`--overpaid`, with `--limit`/`--cursor` pagination).
+
 ## 1.4.3
 
 ### Patch Changes
