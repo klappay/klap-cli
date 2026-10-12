@@ -25,6 +25,7 @@ import {
   printConfirmationProgress,
   runCommand,
 } from '../print'
+import { registerChargesEscrow } from './escrow'
 
 type CreateOptions = {
   amount: string
@@ -258,4 +259,6 @@ export function registerCharges(program: Command): void {
         })
       }),
     )
+
+  registerChargesEscrow(charges)
 }

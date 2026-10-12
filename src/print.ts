@@ -3,6 +3,7 @@ import type {
   Charge,
   CheckChargeResponse,
   ConfirmationProgress,
+  EscrowSafeTransaction,
   Webhook,
   WebhookDelivery,
   WebhookListItem,
@@ -40,6 +41,37 @@ export function printCharge(charge: Charge): void {
   if (charge.checkoutUrl) {
     console.log(`  checkoutUrl:       ${pc.underline(pc.cyan(charge.checkoutUrl))}`)
   }
+  for (const line of formatEscrow(charge.escrow)) console.log(line)
+}
+
+export function formatEscrow(escrow: Charge['escrow']): string[] {
+  if (!escrow) return []
+  return [
+    '  escrow:',
+    `    releaserAddress:  ${escrow.releaserAddress}`,
+    `    releasedAt:       ${escrow.releasedAt ?? 'null'}`,
+    `    refundedAt:       ${escrow.refundedAt ?? 'null'}`,
+  ]
+}
+
+export function formatBaseUnits(amount: string, decimals: number): string {
+  const digits = amount.padStart(decimals + 1, '0')
+  const whole = digits.slice(0, digits.length - decimals)
+  const fraction = digits.slice(digits.length - decimals).replace(/0+$/, '')
+  return fraction ? `${whole}.${fraction}` : whole
+}
+
+export function formatEscrowSafeTransaction(tx: EscrowSafeTransaction): string[] {
+  return [
+    pc.bold(`${tx.action} — sign as ${tx.releaserAddress}`),
+    `  network:          ${tx.network} (chain id ${tx.chainId})`,
+    `  amount:           ${formatBaseUnits(tx.amount, tx.decimals)} ${tx.token} (${tx.amount} base units)`,
+    `  destination:      ${tx.destination}`,
+    `  safeAddress:      ${tx.safeAddress}`,
+    `  tokenAddress:     ${tx.tokenAddress}`,
+    `  nonce:            ${tx.nonce}`,
+    `  safeTxHash:       ${tx.safeTxHash}`,
+  ]
 }
 
 export function formatChargeRow(charge: Charge): string {
@@ -130,12 +162,25 @@ export function printDeliveryResult(event: string, result: DeliveryResult): void
   }
 }
 
+const API_ERROR_HINTS: Partial<Record<string, string>> = {
+  escrow_invalid_signature:
+    'The escrow balance may have changed since you prepared — run prepare-release/prepare-refund again and re-sign.',
+  escrow_safe_mismatch:
+    'Not transient — the escrow Safe cannot be rebuilt at this charge’s address. Contact Klappay support.',
+}
+
+export function formatApiError(err: KlapApiError): string[] {
+  const hint = API_ERROR_HINTS[err.code]
+  const message = pc.red(`${err.code}: ${err.message}`)
+  return hint ? [message, hint] : [message]
+}
+
 export async function runCommand(action: () => Promise<void>): Promise<void> {
   try {
     await action()
   } catch (err) {
     if (err instanceof KlapApiError) {
-      console.error(pc.red(`${err.code}: ${err.message}`))
+      for (const line of formatApiError(err)) console.error(line)
     } else {
       console.error(pc.red(err instanceof Error ? err.message : String(err)))
     }

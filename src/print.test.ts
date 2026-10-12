@@ -1,6 +1,15 @@
+import { KlapApiError } from '@klappay/node'
 import { describe, expect, it } from 'vitest'
 import { buildChargeFixture } from './fixtures'
-import { formatChargeRow, formatConfirmationProgress, formatPayerEvidence } from './print'
+import {
+  formatApiError,
+  formatBaseUnits,
+  formatChargeRow,
+  formatConfirmationProgress,
+  formatEscrow,
+  formatEscrowSafeTransaction,
+  formatPayerEvidence,
+} from './print'
 
 describe('formatConfirmationProgress', () => {
   it('renders an empty bar at 0%', () => {
@@ -76,5 +85,98 @@ describe('formatChargeRow', () => {
   it('keeps columns aligned for the longest status', () => {
     const charge = { ...buildChargeFixture({ status: 'partially_paid', amount: 49.9 }), id: 'ch_x' }
     expect(formatChargeRow(charge)).toMatch(/^ch_x {2}partially_paid {2} {6}49\.9 USD {2}/)
+  })
+})
+
+describe('formatBaseUnits', () => {
+  it.each([
+    ['1500000', 6, '1.5'],
+    ['1000000', 6, '1'],
+    ['1', 6, '0.000001'],
+    ['0', 6, '0'],
+    ['42', 0, '42'],
+    ['123456789012345678901', 18, '123.456789012345678901'],
+  ])('formats %s with %i decimals as %s', (amount, decimals, expected) => {
+    expect(formatBaseUnits(amount, decimals)).toBe(expected)
+  })
+})
+
+describe('formatEscrow', () => {
+  it('prints nothing for a non-escrow charge', () => {
+    expect(formatEscrow(null)).toEqual([])
+  })
+
+  it('prints the releaser and when the escrow was released', () => {
+    expect(
+      formatEscrow({
+        releaserAddress: '0xReleaser',
+        releasedAt: '2026-10-12T15:00:00.000Z',
+        refundedAt: null,
+      }),
+    ).toEqual([
+      '  escrow:',
+      '    releaserAddress:  0xReleaser',
+      '    releasedAt:       2026-10-12T15:00:00.000Z',
+      '    refundedAt:       null',
+    ])
+  })
+})
+
+describe('formatEscrowSafeTransaction', () => {
+  it('shows the human amount next to the exact base units and the destination', () => {
+    const lines = formatEscrowSafeTransaction({
+      action: 'refund',
+      network: 'base',
+      token: 'USDC',
+      chainId: 8453,
+      safeAddress: `0x${'1'.repeat(40)}`,
+      releaserAddress: `0x${'2'.repeat(40)}`,
+      tokenAddress: `0x${'3'.repeat(40)}`,
+      destination: `0x${'4'.repeat(40)}`,
+      amount: '49900000',
+      decimals: 6,
+      nonce: '0',
+      safeTxHash: `0x${'5'.repeat(64)}`,
+      typedData: {
+        domain: { chainId: 8453, verifyingContract: `0x${'1'.repeat(40)}` },
+        types: { SafeTx: [] },
+        primaryType: 'SafeTx',
+        message: {
+          to: `0x${'3'.repeat(40)}`,
+          value: '0',
+          data: '0x',
+          operation: 0,
+          safeTxGas: '0',
+          baseGas: '0',
+          gasPrice: '0',
+          gasToken: `0x${'0'.repeat(40)}`,
+          refundReceiver: `0x${'0'.repeat(40)}`,
+          nonce: '0',
+        },
+      },
+    })
+    expect(lines).toContain('  amount:           49.9 USDC (49900000 base units)')
+    expect(lines).toContain(`  destination:      0x${'4'.repeat(40)}`)
+    expect(lines).toContain('  network:          base (chain id 8453)')
+  })
+})
+
+describe('formatApiError', () => {
+  it('adds a re-prepare hint to escrow_invalid_signature', () => {
+    const lines = formatApiError(new KlapApiError(400, 'escrow_invalid_signature', 'bad sig'))
+    expect(lines).toHaveLength(2)
+    expect(lines[0]).toContain('escrow_invalid_signature: bad sig')
+    expect(lines[1]).toMatch(/prepare-release\/prepare-refund again and re-sign/)
+  })
+
+  it('tells the user escrow_safe_mismatch is not transient', () => {
+    const lines = formatApiError(new KlapApiError(422, 'escrow_safe_mismatch', 'mismatch'))
+    expect(lines[1]).toMatch(/^Not transient/)
+  })
+
+  it('prints just the code and message for errors without a hint', () => {
+    const lines = formatApiError(new KlapApiError(404, 'not_found', 'Charge not found'))
+    expect(lines).toHaveLength(1)
+    expect(lines[0]).toContain('not_found: Charge not found')
   })
 })

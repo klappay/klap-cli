@@ -56,6 +56,10 @@ ch_a1b2c3d4e5
   checkoutUrl:       https://pay.stage.klappay.com/c/ch_a1b2c3d4e5
 ```
 
+A charge created as an escrow also prints an `escrow:` block at the end
+(`releaserAddress`, `releasedAt`, `refundedAt`). See
+[Escrow](#escrow-prepare-release-release-prepare-refund-refund).
+
 - **`acceptedPayments`** — every `(token, network)` pair you configured.
 - **`paidWith`** — every pair actually paid so far, comma-separated, or
   `none yet` until the first transfer arrives. A charge with multiple
@@ -234,3 +238,82 @@ ch_a1b2c3d4e5
   environment:       test
   checkoutUrl:       https://pay.stage.klappay.com/c/ch_a1b2c3d4e5
 ```
+
+## Escrow: `prepare-release`, `release`, `prepare-refund`, `refund`
+
+```bash
+klap charges prepare-release <id> [--out <file>] [--env test|live]
+klap charges release <id> --signature <hex> [--env test|live]
+
+klap charges prepare-refund <id> [--out <file>] [--env test|live]
+klap charges refund <id> --signature <hex> [--env test|live]
+```
+
+Thin wrappers over `klap.charges.prepareRelease()`/`release()` and
+`prepareRefund()`/`refund()`, for a charge created as an escrow. Its
+funds sit in a dedicated Safe until the escrow's releaser signs one of
+two transfers:
+
+- **release** — the full balance goes to the charge's split address,
+  and the normal distribution pays out from there.
+- **refund** — the full balance goes back to the address that funded
+  the charge. No distribution follows.
+
+An escrow can only ever be released *or* refunded, once. Both move real
+funds on-chain and can't be undone.
+
+The CLI never holds or asks for the releaser's private key. You sign
+somewhere else (a wallet, viem, ethers, a KMS) and pass the signature
+in:
+
+1. **Prepare.** `prepare-release`/`prepare-refund` is read-only and
+   prints the exact Safe transaction the API will execute:
+
+   ```
+    LIVE  — real funds and real data
+   refund — sign as 0x2222222222222222222222222222222222222222
+     network:          base (chain id 8453)
+     amount:           49.9 USDC (49900000 base units)
+     destination:      0x4444444444444444444444444444444444444444
+     safeAddress:      0x1111111111111111111111111111111111111111
+     tokenAddress:     0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913
+     nonce:            0
+     safeTxHash:       0x5555555555555555555555555555555555555555555555555555555555555555
+   ```
+
+   Check `destination`, `amount`, `tokenAddress`, the chain id and
+   `safeAddress` against your own records before signing. Signing
+   commits the escrow's funds to exactly that transfer. For a refund,
+   `destination` is the sender of the most recently credited transfer,
+   which isn't always the buyer: an exchange withdrawal comes from the
+   exchange's wallet, a swap from a router, and a charge paid by several
+   wallets refunds only to the last one.
+
+2. **Sign.** Pass `--out tx.json` to also write the full transaction,
+   including its EIP-712 `typedData`, to a file. Sign `typedData` with
+   the key behind the releaser address. It's plain JSON, so ethers or a
+   KMS can take it as-is. With viem, pass it through
+   `toSignableEscrowTypedData` from `@klappay/types` first. The result
+   must be an EIP-712 signature from a plain externally-owned account.
+
+3. **Submit.**
+
+   ```bash
+   klap charges refund ch_a1b2c3d4e5 --signature 0x2d0fbf1dba2878...
+   ```
+
+   The CLI checks that `--signature` is hex before sending it. The Safe
+   contract itself verifies it on-chain before anything moves. The
+   updated charge is printed, with an `escrow` block showing
+   `releasedAt`/`refundedAt`. A `charge.escrow_released` or
+   `charge.escrow_refunded` webhook follows once the transfer executes.
+
+A signature is only valid while the escrow's balance is unchanged. If
+more funds arrive between prepare and submit, the API rejects with
+`escrow_invalid_signature`; prepare again and re-sign. Other errors
+come straight from the API: `escrow_already_released`/
+`escrow_already_refunded`, `escrow_not_configured`,
+`escrow_nothing_to_release`/`escrow_nothing_to_refund` (zero balance),
+`escrow_multiple_payment_pairs`, and `escrow_safe_mismatch`. That last
+one isn't transient; contact Klappay support. All four commands need an
+API key with `charges:write`.
