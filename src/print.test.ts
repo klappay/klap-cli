@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import { formatConfirmationProgress } from './print'
+import { buildChargeFixture } from './fixtures'
+import { formatChargeRow, formatConfirmationProgress } from './print'
 
 describe('formatConfirmationProgress', () => {
   it('renders an empty bar at 0%', () => {
@@ -30,5 +31,24 @@ describe('formatConfirmationProgress', () => {
       blocksRequired: 12,
     })
     expect(line).toBe('[#######-------------] 33%  ethereum 4/12 blocks')
+  })
+})
+
+describe('formatChargeRow', () => {
+  it('prints id, padded status, right-aligned amount with currency, and createdAt', () => {
+    const charge = {
+      ...buildChargeFixture({ status: 'confirmed' }),
+      id: 'ch_a1b2c3d4e5',
+      amount: 10,
+      createdAt: '2026-10-12T14:02:11.000Z',
+    }
+    expect(formatChargeRow(charge)).toBe(
+      'ch_a1b2c3d4e5  confirmed               10 USD  2026-10-12T14:02:11.000Z',
+    )
+  })
+
+  it('keeps columns aligned for the longest status', () => {
+    const charge = { ...buildChargeFixture({ status: 'partially_paid', amount: 49.9 }), id: 'ch_x' }
+    expect(formatChargeRow(charge)).toMatch(/^ch_x {2}partially_paid {2} {6}49\.9 USD {2}/)
   })
 })

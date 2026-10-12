@@ -41,6 +41,10 @@ export function printCharge(charge: Charge): void {
   }
 }
 
+export function formatChargeRow(charge: Charge): string {
+  return `${charge.id}  ${charge.status.padEnd(14)}  ${String(charge.amount).padStart(10)} ${charge.currency}  ${charge.createdAt}`
+}
+
 const PROGRESS_BAR_WIDTH = 20
 
 export function formatConfirmationProgress(progress: ConfirmationProgress): string {

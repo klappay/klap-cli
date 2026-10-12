@@ -93,6 +93,60 @@ klap sandbox trigger ch_a1b2c3d4e5 charge.confirmed
 
 See [Sandbox](/sandbox) and [Logs](/logs).
 
+## `klap charges get`
+
+```bash
+klap charges get <id> [--env test|live]
+```
+
+Thin wrapper over `klap.charges.get()`. Prints the charge's current
+state in the same shape as `klap charges create` — useful for a charge
+created elsewhere (your backend, the checkout page) when you just want
+one snapshot instead of `watch`'s live stream.
+
+## `klap charges list`
+
+```bash
+klap charges list [--status <status>] [--token <token>] [--network <network>] \
+  [--since <iso-datetime>] [--overpaid | --no-overpaid] \
+  [--limit <n>] [--cursor <cursor>] [--env test|live]
+```
+
+Thin wrapper over `klap.charges.list()`: one page of charges, one line
+each — id, status, amount, and `createdAt`.
+
+```bash
+# every confirmed charge paid in USDC on Base since October 1st
+klap charges list --status confirmed --token USDC --network base --since 2026-10-01T00:00:00Z
+
+# only charges where the payer sent more than the amount
+klap charges list --overpaid
+```
+
+```
+ TEST  — sandbox, no real funds
+ch_a1b2c3d4e5  confirmed               10 USD  2026-10-12T14:02:11.000Z
+ch_f6g7h8i9j0  pending               49.9 USD  2026-10-12T13:58:40.000Z
+More results — rerun with the same filters plus --cursor eyJpZCI6ImNoX2Y2...
+```
+
+- **`--status`** — one of `pending`, `partially_paid`, `confirmed`,
+  `expired`, `underpaid`.
+- **`--token`/`--network`** — filter on the pair actually *paid*
+  (`paidWith`), not on what the charge accepted.
+- **`--since`** — an ISO 8601 datetime; filters on `createdAt`, not on
+  when the status last changed.
+- **`--overpaid`/`--no-overpaid`** — only overpaid charges, or only
+  charges that aren't. Omit both for either.
+- **`--limit`** — page size, 1–100 (default 20).
+- **`--cursor`** — when there's another page, the last line prints the
+  cursor to fetch it. Pass it back verbatim with the same filters; it's
+  opaque, never build or edit it yourself.
+
+Every flag is validated against `@klappay/types`'s own schema before
+any request is sent, so a typo'd status or a malformed date fails
+locally with the flag's name in the error.
+
 ## `klap charges watch`
 
 ```bash

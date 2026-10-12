@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseAcceptedPayment, parseFeePayer } from './charges'
+import { parseAcceptedPayment, parseFeePayer, parseListChargesOptions } from './charges'
 
 describe('parseAcceptedPayment', () => {
   it('parses a valid TOKEN:NETWORK pair', () => {
@@ -38,5 +38,53 @@ describe('parseFeePayer', () => {
 
   it('rejects anything else', () => {
     expect(() => parseFeePayer('customer')).toThrow(/--fee-payer must be one of/)
+  })
+})
+
+describe('parseListChargesOptions', () => {
+  it('defaults the page size to 20 when no flags are passed', () => {
+    expect(parseListChargesOptions({})).toEqual({ limit: 20 })
+  })
+
+  it('maps every flag onto the list filter, coercing --limit to a number', () => {
+    expect(
+      parseListChargesOptions({
+        status: 'confirmed',
+        token: 'USDC',
+        network: 'base',
+        since: '2026-10-01T00:00:00.000Z',
+        limit: '50',
+        cursor: 'abc',
+      }),
+    ).toEqual({
+      status: 'confirmed',
+      token: 'USDC',
+      network: 'base',
+      since: '2026-10-01T00:00:00.000Z',
+      limit: 50,
+      cursor: 'abc',
+    })
+  })
+
+  it('maps --overpaid to true and --no-overpaid to false, leaving it unset otherwise', () => {
+    expect(parseListChargesOptions({ overpaid: true }).isOverpaid).toBe(true)
+    expect(parseListChargesOptions({ overpaid: false }).isOverpaid).toBe(false)
+    expect(parseListChargesOptions({}).isOverpaid).toBeUndefined()
+  })
+
+  it('rejects an unknown status, naming the flag', () => {
+    expect(() => parseListChargesOptions({ status: 'paid' })).toThrow(/^--status: /)
+  })
+
+  it('rejects a --limit above the API maximum', () => {
+    expect(() => parseListChargesOptions({ limit: '101' })).toThrow(/^--limit: /)
+  })
+
+  it('rejects a non-numeric --limit', () => {
+    expect(() => parseListChargesOptions({ limit: 'ten' })).toThrow(/^--limit: /)
+  })
+
+  it('rejects a --since that is not an ISO datetime', () => {
+    expect(() => parseListChargesOptions({ since: 'yesterday' })).toThrow(/^--since: /)
   })
 })
