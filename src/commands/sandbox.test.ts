@@ -6,6 +6,12 @@ describe('parseTriggerableEvent', () => {
     expect(parseTriggerableEvent('charge.confirmed')).toBe('charge.confirmed')
   })
 
+  it('accepts the below-minimum settlement event', () => {
+    expect(parseTriggerableEvent('charge.settlement_below_minimum')).toBe(
+      'charge.settlement_below_minimum',
+    )
+  })
+
   it('rejects an event that is not triggerable (e.g. charge.created)', () => {
     expect(() => parseTriggerableEvent('charge.created')).toThrow(/event must be one of/)
   })

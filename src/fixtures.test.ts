@@ -1,4 +1,4 @@
-import { WebhookPayloadSchema } from '@klappay/types'
+import { ChargeSchema, ChargeWebhookEventTypeSchema, WebhookPayloadSchema } from '@klappay/types'
 import { describe, expect, it } from 'vitest'
 import {
   buildChargeFixture,
@@ -17,13 +17,13 @@ describe('buildChargeFixture', () => {
 
   it('fills in a partial payment for partially_paid', () => {
     const charge = buildChargeFixture({ status: 'partially_paid', amount: 100 })
-    expect(charge.amountReceived).toBe(50)
+    expect(charge.amountReceived).toBe(charge.amount / 2)
     expect(charge.paidWith).toHaveLength(1)
   })
 
   it('marks confirmed charges as paid in full', () => {
     const charge = buildChargeFixture({ status: 'confirmed', amount: 100 })
-    expect(charge.amountReceived).toBe(100)
+    expect(charge.amountReceived).toBe(charge.amount)
     expect(charge.confirmedAt).not.toBeNull()
   })
 
@@ -31,7 +31,7 @@ describe('buildChargeFixture', () => {
     const charge = buildChargeFixture({ status: 'pending', amount: 100, overpaid: true })
     expect(charge.status).toBe('confirmed')
     expect(charge.isOverpaid).toBe(true)
-    expect(charge.amountReceived).toBe(150)
+    expect(charge.amountReceived).toBe(charge.amount * 1.5)
   })
 
   it('backdates expiresAt for expired charges', () => {
@@ -59,6 +59,33 @@ describe('buildChargeFixture', () => {
     const charge = buildChargeFixture({ amount: 100, feePayer: 'payer' })
     expect(charge.merchantAmount).toBe(100)
     expect(charge.feeAmount).toBe(1)
+  })
+
+  it('echoes the input as requestedAmount and adds fee and gas up to amount', () => {
+    const merchant = buildChargeFixture({ amount: 100 })
+    expect(merchant.requestedAmount).toBe(100)
+    expect(merchant.amount).toBe(100.05)
+    expect(merchant.amount).toBe(
+      merchant.merchantAmount + merchant.feeAmount + merchant.gasFeeAmount,
+    )
+
+    const payer = buildChargeFixture({ amount: 100, feePayer: 'payer' })
+    expect(payer.requestedAmount).toBe(100)
+    expect(payer.amount).toBe(101.05)
+  })
+
+  it('carries selfSettlement only while settlementStatus is below_minimum', () => {
+    const parked = buildChargeFixture({
+      status: 'confirmed',
+      settlementStatus: 'below_minimum',
+      acceptedPayments: [{ token: 'USDT', network: 'optimism' }],
+    })
+    expect(parked.selfSettlement?.splitAddress).toBe(parked.address)
+    expect(parked.selfSettlement?.pairs).toEqual([{ token: 'USDT', network: 'optimism' }])
+    expect(parked.settledAt).toBeNull()
+
+    const failed = buildChargeFixture({ status: 'confirmed', settlementStatus: 'failed' })
+    expect(failed.selfSettlement).toBeUndefined()
   })
 
   it('only sets settledAt when settlementStatus is completed', () => {
@@ -94,6 +121,16 @@ describe('buildWebhookPayloadFixture', () => {
 
     const overpaid = buildWebhookPayloadFixture('charge.overpaid')
     expect(overpaid.data).toMatchObject({ isOverpaid: true })
+
+    const parked = buildWebhookPayloadFixture('charge.settlement_below_minimum')
+    expect(parked.data).toMatchObject({ settlementStatus: 'below_minimum' })
+  })
+
+  // WebhookPayloadSchema alone would accept a charge event carrying the wrong
+  // data, so every event's data is checked against ChargeSchema directly.
+  it.each(ChargeWebhookEventTypeSchema.options)('builds a real Charge for %s', (event) => {
+    const { data } = buildWebhookPayloadFixture(event)
+    expect(ChargeSchema.safeParse(data).success).toBe(true)
   })
 
   it('uses the given real charge data instead of a fixture when provided', () => {

@@ -5,6 +5,7 @@ import type {
   ChargeFeePayer,
   ChargeStatus,
   ChargeWebhookEventTypeSchema,
+  SelfSettlement,
   SettlementStatus,
   WebhookEventType,
   WebhookHealthEventData,
@@ -22,8 +23,30 @@ export type ChargeFixtureOptions = {
   feePercent?: number
 }
 
+const FIXTURE_GAS_FEE = 0.05
+
 function randomAddress(): string {
   return `0x${randomBytes(20).toString('hex')}`
+}
+
+function roundCents(value: number): number {
+  return Math.round(value * 100) / 100
+}
+
+function buildSelfSettlementFixture(
+  splitAddress: string,
+  acceptedPayments: AcceptedPayment[],
+): SelfSettlement {
+  return {
+    splitAddress,
+    recipients: [
+      { address: randomAddress(), percentAllocation: 99 },
+      { address: randomAddress(), percentAllocation: 1 },
+    ],
+    distributorFeePercent: 0,
+    salt: `0x${randomBytes(32).toString('hex')}`,
+    pairs: acceptedPayments.map(({ network, token }) => ({ network, token })),
+  }
 }
 
 /**
@@ -34,9 +57,20 @@ function randomAddress(): string {
 export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
   const status = options.status ?? 'pending'
   const overpaid = options.overpaid ?? false
-  const amount = options.amount ?? 49.9
+  const requestedAmount = options.amount ?? 49.9
   const acceptedPayments = options.acceptedPayments ?? [{ token: 'USDC', network: 'base' }]
   const environment = options.environment ?? 'test'
+
+  // ponytail: real fee-tier and gas-quote math lives in klap-core, not
+  // reproduced here. 'merchant' takes the fee out of the requested amount,
+  // 'payer' leaves it as the merchant's full take, and the gas fee is a
+  // flat value. Close enough for a local fixture's shape.
+  const feePayer = options.feePayer ?? 'merchant'
+  const feePercent = options.feePercent ?? 1
+  const feeAmount = roundCents(requestedAmount * (feePercent / 100))
+  const merchantAmount =
+    feePayer === 'payer' ? requestedAmount : roundCents(requestedAmount - feeAmount)
+  const amount = roundCents(merchantAmount + feeAmount + FIXTURE_GAS_FEE)
 
   const now = new Date()
   const isPast = status === 'expired'
@@ -57,32 +91,30 @@ export function buildChargeFixture(options: ChargeFixtureOptions = {}): Charge {
   const settlementStatus = confirmed ? (options.settlementStatus ?? null) : null
   const id = `ch_fixture_${randomBytes(6).toString('hex')}`
   const checkoutDomain = environment === 'live' ? 'pay.klappay.com' : 'pay.stage.klappay.com'
-
-  // ponytail: real fee-tier math lives in klap-core, not reproduced here —
-  // 'merchant' deducts the fee from `amount`, 'payer' leaves `amount` as
-  // the merchant's full take. Close enough for a local fixture's shape.
-  const feePayer = options.feePayer ?? 'merchant'
-  const feePercent = options.feePercent ?? 1
-  const feeAmount = Math.round(amount * (feePercent / 100) * 100) / 100
-  const merchantAmount =
-    feePayer === 'payer' ? amount : Math.round((amount - feeAmount) * 100) / 100
+  const address = randomAddress()
 
   return {
     id,
     amount,
+    requestedAmount,
     amountReceived,
     isOverpaid: overpaid,
     currency: 'USD',
     feePayer,
     feePercent,
     feeAmount,
+    gasFeeAmount: FIXTURE_GAS_FEE,
     merchantAmount,
     acceptedPayments,
     paidWith,
     swapAlternatives: [],
-    address: randomAddress(),
+    address,
     status: overpaid ? 'confirmed' : status,
     settlementStatus,
+    selfSettlement:
+      settlementStatus === 'below_minimum'
+        ? buildSelfSettlementFixture(address, acceptedPayments)
+        : undefined,
     environment,
     apiKeyId: null,
     txHash: null,
@@ -111,6 +143,7 @@ const CHARGE_EVENT_FIXTURE: Record<ChargeWebhookEventType, ChargeFixtureOptions>
   'charge.underpaid': { status: 'underpaid' },
   'charge.settled': { status: 'confirmed', settlementStatus: 'completed' },
   'charge.settlement_failed': { status: 'confirmed', settlementStatus: 'failed' },
+  'charge.settlement_below_minimum': { status: 'confirmed', settlementStatus: 'below_minimum' },
   'charge.overpaid': { status: 'pending', overpaid: true },
   // ponytail: buildChargeFixture has no escrow shape yet — these two just
   // render as a plain confirmed charge; add one if a handler under test

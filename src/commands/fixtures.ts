@@ -54,7 +54,10 @@ export function registerFixtures(program: Command): void {
       '--status <status>',
       `One of ${ChargeStatusSchema.options.join(', ')} (default pending)`,
     )
-    .option('--amount <amount>', 'Amount in USD (default 49.90)')
+    .option(
+      '--amount <amount>',
+      'Requested amount in USD (default 49.90) — `amount` adds a flat gas fee on top',
+    )
     .option(
       '--accept <token:network>',
       'Accepted payment, e.g. USDC:base — repeat for multiple (default USDC:base)',

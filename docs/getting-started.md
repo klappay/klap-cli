@@ -49,9 +49,11 @@ klap charges create --amount 10 --accept USDC:base --expires-in 3600
 ch_a1b2c3d4e5
   status:            pending
   settlementStatus:  null
-  amount:            10
+  amount:            10.05
+  requestedAmount:   10
   amountReceived:    null
   fee:               0.1 (1%, paid by merchant)
+  gasFee:            0.05
   merchantAmount:    9.9
   acceptedPayments:  USDC:base
   paidWith:          none yet

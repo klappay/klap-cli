@@ -30,6 +30,7 @@ klap fixtures charge --overpaid
 klap fixtures charge --status confirmed --settlement completed
 klap fixtures charge --status confirmed --settlement failed
 klap fixtures charge --status confirmed --settlement pending
+klap fixtures charge --status confirmed --settlement below_minimum
 
 # override amount and accepted payments
 klap fixtures charge --status confirmed --amount 100 --accept USDT:optimism
@@ -37,7 +38,7 @@ klap fixtures charge --status confirmed --amount 100 --accept USDT:optimism
 # a live-environment fixture (only changes the environment/checkoutUrl fields)
 klap fixtures charge --status confirmed --env live
 
-# a fixture where the payer covers the fee — merchantAmount equals amount
+# a fixture where the payer covers the fee — merchantAmount equals --amount
 klap fixtures charge --amount 100 --fee-payer payer
 ```
 
@@ -50,13 +51,15 @@ klap fixtures charge --status confirmed --settlement completed
 ```json
 {
   "id": "ch_fixture_c5dfab0b9101",
-  "amount": 49.9,
-  "amountReceived": 49.9,
+  "amount": 49.95,
+  "requestedAmount": 49.9,
+  "amountReceived": 49.95,
   "isOverpaid": false,
   "currency": "USD",
   "feePayer": "merchant",
   "feePercent": 1,
   "feeAmount": 0.5,
+  "gasFeeAmount": 0.05,
   "merchantAmount": 49.4,
   "acceptedPayments": [{ "token": "USDC", "network": "base" }],
   "paidWith": [{ "token": "USDC", "network": "base" }],
@@ -81,6 +84,10 @@ klap fixtures charge --status underpaid > fixtures/underpaid-charge.json
 klap fixtures charge --status confirmed --overpaid | jq '.amountReceived'
 ```
 
+`--amount` sets `requestedAmount`; `amount` is `merchantAmount` +
+`feeAmount` + `gasFeeAmount`, with `gasFeeAmount` a flat `0.05` in every
+fixture (a live quote in production).
+`--settlement below_minimum` also adds a `selfSettlement` object.
 `--status` defaults to `pending`; `--overpaid` forces a confirmed,
 overpaid charge regardless of `--status`; `--settlement` only takes
 effect once the charge is confirmed; `--fee-payer` defaults to

@@ -33,8 +33,8 @@ klap charges create --amount 5 --accept USDC:polygon --expires-in 86400
 # force a specific environment when both a test and a live key are configured
 klap charges create --amount 25 --accept USDC:base --expires-in 1800 --env test
 
-# gross up --amount so the payer covers Klappay's fee instead of you —
-# you receive the full $50, not $50 minus the fee
+# gross up the total so the payer covers Klappay's fee instead of you —
+# you net the full $50, not $50 minus the fee
 klap charges create --amount 50 --accept USDC:base --expires-in 3600 --fee-payer payer
 ```
 
@@ -45,9 +45,11 @@ klap charges create --amount 50 --accept USDC:base --expires-in 3600 --fee-payer
 ch_a1b2c3d4e5
   status:            pending
   settlementStatus:  null
-  amount:            49.9
+  amount:            49.95
+  requestedAmount:   49.9
   amountReceived:    null
   fee:               0.499 (1%, paid by merchant)
+  gasFee:            0.05
   merchantAmount:    49.401
   acceptedPayments:  USDC:base, USDT:base, USDC:optimism
   paidWith:          none yet
@@ -65,13 +67,18 @@ A charge created as an escrow also prints an `escrow:` block at the end
   `none yet` until the first transfer arrives. A charge with multiple
   `acceptedPayments` can be paid with any combination of them; every
   transfer on an accepted pair sums toward the charge total.
-- **`fee`/`merchantAmount`** — your fee tier's `feePercent`, the
-  resulting `feeAmount`, and who's covering it (`--fee-payer`).
-  `merchantAmount` is always what actually lands in your payout,
-  regardless of who paid the fee — with `--fee-payer merchant` (the
-  default) it's `amount` minus the fee; with `--fee-payer payer`,
-  `amount` itself is grossed up so `merchantAmount` equals the amount
-  you asked for.
+- **`amount`/`requestedAmount`** — `amount` is the total the payer
+  sends, so it's what to show them. `requestedAmount` echoes the
+  `--amount` you passed, and is `null` on a charge created before this
+  field existed.
+- **`fee`/`gasFee`/`merchantAmount`** — your fee tier's `feePercent`,
+  the resulting `feeAmount`, and who's covering it (`--fee-payer`), then
+  the network gas fee the payer covers, quoted live when the charge is
+  created. The three add up to `amount`. `merchantAmount` is what your
+  side of the split nets: with `--fee-payer merchant` (the default) it's
+  your `--amount` minus the fee; with `--fee-payer payer` it's the
+  `--amount` you asked for. A charge created before gas fees existed
+  shows a `gasFee` of `0`.
 - **`checkoutUrl`** — a live link to the hosted checkout page for this
   exact charge, printed underlined so it's easy to click straight from
   the terminal. It comes directly from the API response (the CLI never
@@ -84,6 +91,25 @@ A charge created as an escrow also prints an `escrow:` block at the end
 configured — see [Configuration](/configuration). The `LIVE`/`TEST`
 banner above the charge is printed by every command that resolves an
 environment, so you're never uncertain which one you're looking at.
+
+### Limits and errors
+
+`create` prints a next-step hint with each of these:
+
+- **`422 amount_below_minimum`** — `--amount` is under the minimum:
+  `0.10` live, `5.00` live when the charge accepts `ethereum`, `0.01`
+  test.
+- **`503 gas_quote_unavailable`** — gas prices couldn't be read. Safe to
+  retry.
+- **`422 recipient_transfer_restricted`** — a token issuer blocks an
+  address this charge pays from receiving on an accepted pair; the
+  message lists the pairs. Drop them from `--accept`.
+
+`ethereum` is isolated: a charge accepting it can take both of its
+tokens but no other network, or the API answers `400 validation_error`.
+Create a separate charge for it. A transfer below `0.10` live or `0.01`
+test doesn't count toward `amountReceived` unless it completes the
+charge.
 
 ### Then what?
 
@@ -228,9 +254,11 @@ confirmation progress bar. See [`watch` vs `listen`](/listen#watch-vs-listen).
 ch_a1b2c3d4e5
   status:            confirmed
   settlementStatus:  pending
-  amount:            10
-  amountReceived:    10
+  amount:            10.05
+  requestedAmount:   10
+  amountReceived:    10.05
   fee:               0.1 (1%, paid by merchant)
+  gasFee:            0.05
   merchantAmount:    9.9
   acceptedPayments:  USDC:base
   paidWith:          USDC:base
@@ -238,6 +266,17 @@ ch_a1b2c3d4e5
   environment:       test
   checkoutUrl:       https://pay.stage.klappay.com/c/ch_a1b2c3d4e5
 ```
+
+## Payouts parked below the minimum
+
+`settlementStatus: below_minimum` means what the split holds hasn't
+covered the gas to pay it out for 24 hours, so Klappay sent nothing. The
+funds stay in the split, and a new payment on that pair re-arms the
+payout. While a charge is in this state, its output ends with a
+`selfSettlement:` block holding the split address, recipients, salt,
+distributor fee and affected pairs: everything needed to deploy the
+split and call `distribute()` yourself. Simulate it with
+`klap sandbox trigger <id> charge.settlement_below_minimum`.
 
 ## Escrow: `prepare-release`, `release`, `prepare-refund`, `refund`
 
@@ -314,6 +353,8 @@ more funds arrive between prepare and submit, the API rejects with
 come straight from the API: `escrow_already_released`/
 `escrow_already_refunded`, `escrow_not_configured`,
 `escrow_nothing_to_release`/`escrow_nothing_to_refund` (zero balance),
-`escrow_multiple_payment_pairs`, and `escrow_safe_mismatch`. That last
+`escrow_multiple_payment_pairs`, `escrow_release_not_covered` (`release`
+only: the balance doesn't cover the gas to release and pay out at current
+prices, so nothing was sent), and `escrow_safe_mismatch`. That last
 one isn't transient; contact Klappay support. All four commands need an
 API key with `charges:write`.

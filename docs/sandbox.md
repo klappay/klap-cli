@@ -8,7 +8,7 @@ klap sandbox trigger <chargeId> <event> [--amount <amount>] [--env test|live]
 
 `event` is one of: `charge.confirmed`, `charge.partially_paid`,
 `charge.overpaid`, `charge.expired`, `charge.underpaid`, `charge.settled`,
-`charge.settlement_failed`. Requires a `test`-environment key — a test
+`charge.settlement_failed`, `charge.settlement_below_minimum`. Requires a `test`-environment key — a test
 key can only ever act on a test charge, and vice versa; passing
 `--env live` here reaches the server but gets rejected.
 
@@ -31,6 +31,7 @@ klap sandbox trigger ch_a1b2c3d4e5 charge.overpaid --amount 75
 # simulate settlement outcomes directly — no blockchain, no gas
 klap sandbox trigger ch_a1b2c3d4e5 charge.settled
 klap sandbox trigger ch_a1b2c3d4e5 charge.settlement_failed
+klap sandbox trigger ch_a1b2c3d4e5 charge.settlement_below_minimum
 
 # a charge that ran out the clock unpaid
 klap sandbox trigger ch_a1b2c3d4e5 charge.expired
@@ -51,7 +52,8 @@ against or exceed) — `charge.confirmed` still works there.
 
 ### Why this is safe
 
-`charge.settled`/`charge.settlement_failed` never touch the blockchain —
+`charge.settled`/`charge.settlement_failed`/`charge.settlement_below_minimum`
+never touch the blockchain —
 they simulate the outcome directly, matching this API's guarantee that
 test charges never move real funds or spend real gas.
 

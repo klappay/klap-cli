@@ -21,9 +21,7 @@ export function registerSandbox(program: Command): void {
 
   sandbox
     .command('trigger <chargeId> <event>')
-    .description(
-      'Simulate a charge event: charge.confirmed, charge.partially_paid, charge.overpaid, charge.expired, charge.underpaid, charge.settled, charge.settlement_failed',
-    )
+    .description(`Simulate a charge event: ${TriggerableChargeEventSchema.options.join(', ')}`)
     .option('--amount <amount>', 'Used with charge.partially_paid/charge.overpaid')
     .option('--env <environment>', ENV_FLAG_DESCRIPTION_SANDBOX)
     .action((chargeId: string, event: string, options: { amount?: string; env?: string }) =>

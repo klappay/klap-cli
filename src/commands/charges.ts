@@ -155,7 +155,10 @@ export function registerCharges(program: Command): void {
   charges
     .command('create')
     .description('Create a charge')
-    .requiredOption('--amount <amount>', 'Amount in USD, e.g. 49.90')
+    .requiredOption(
+      '--amount <amount>',
+      'Amount to charge in USD, e.g. 49.90 — the payer also covers a network gas fee, so the total is printed as `amount`',
+    )
     .requiredOption(
       '--accept <token:network>',
       'Accepted payment, e.g. USDC:base — repeat for multiple',

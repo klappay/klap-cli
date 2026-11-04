@@ -1,5 +1,5 @@
 import { KlapApiError } from '@klappay/node'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { buildChargeFixture } from './fixtures'
 import {
   formatApiError,
@@ -9,6 +9,8 @@ import {
   formatEscrow,
   formatEscrowSafeTransaction,
   formatPayerEvidence,
+  formatSelfSettlement,
+  printCharge,
 } from './print'
 
 describe('formatConfirmationProgress', () => {
@@ -83,7 +85,7 @@ describe('formatChargeRow', () => {
   })
 
   it('keeps columns aligned for the longest status', () => {
-    const charge = { ...buildChargeFixture({ status: 'partially_paid', amount: 49.9 }), id: 'ch_x' }
+    const charge = { ...buildChargeFixture({ status: 'partially_paid' }), id: 'ch_x', amount: 49.9 }
     expect(formatChargeRow(charge)).toMatch(/^ch_x {2}partially_paid {2} {6}49\.9 USD {2}/)
   })
 })
@@ -161,7 +163,71 @@ describe('formatEscrowSafeTransaction', () => {
   })
 })
 
+describe('printCharge', () => {
+  afterEach(() => vi.restoreAllMocks())
+
+  function printedLines(charge: Parameters<typeof printCharge>[0]): string[] {
+    const log = vi.spyOn(console, 'log').mockImplementation(() => {})
+    printCharge(charge)
+    return log.mock.calls.map(([line]) => String(line))
+  }
+
+  it('shows what the merchant asked for next to the total and the gas fee', () => {
+    const lines = printedLines(buildChargeFixture({ amount: 100 }))
+    expect(lines).toContain('  amount:            100.05')
+    expect(lines).toContain('  requestedAmount:   100')
+    expect(lines).toContain('  gasFee:            0.05')
+  })
+
+  it('prints null for a charge created before requestedAmount existed', () => {
+    const lines = printedLines({ ...buildChargeFixture(), requestedAmount: null })
+    expect(lines).toContain('  requestedAmount:   null')
+  })
+
+  it('adds the selfSettlement block only for a parked payout', () => {
+    const parked = buildChargeFixture({ status: 'confirmed', settlementStatus: 'below_minimum' })
+    expect(printedLines(parked)).toContain('  selfSettlement:')
+
+    const settled = buildChargeFixture({ status: 'confirmed', settlementStatus: 'completed' })
+    expect(printedLines(settled)).not.toContain('  selfSettlement:')
+  })
+})
+
+describe('formatSelfSettlement', () => {
+  it('prints nothing when the charge has no selfSettlement', () => {
+    expect(formatSelfSettlement(undefined)).toEqual([])
+  })
+
+  it('prints everything needed to settle by hand', () => {
+    const lines = formatSelfSettlement({
+      splitAddress: '0xsplit',
+      recipients: [{ address: '0xmerchant', percentAllocation: 99 }],
+      distributorFeePercent: 0,
+      salt: '0xsalt',
+      pairs: [{ network: 'base', token: 'USDC' }],
+    }).join('\n')
+    expect(lines).toContain('0xsplit')
+    expect(lines).toContain('USDC:base')
+    expect(lines).toContain('0xsalt')
+    expect(lines).toContain('0xmerchant (99%)')
+  })
+})
+
 describe('formatApiError', () => {
+  it('states every minimum, including the higher ethereum one, on amount_below_minimum', () => {
+    const lines = formatApiError(new KlapApiError(422, 'amount_below_minimum', 'too low'))
+    expect(lines[1]).toContain('0.10 live')
+    expect(lines[1]).toContain('5.00 live on ethereum')
+    expect(lines[1]).toContain('0.01 test')
+  })
+
+  it.each(['gas_quote_unavailable', 'recipient_transfer_restricted', 'escrow_release_not_covered'])(
+    'adds a next-step hint for %s',
+    (code) => {
+      expect(formatApiError(new KlapApiError(422, code, 'nope'))).toHaveLength(2)
+    },
+  )
+
   it('adds a re-prepare hint to escrow_invalid_signature', () => {
     const lines = formatApiError(new KlapApiError(400, 'escrow_invalid_signature', 'bad sig'))
     expect(lines).toHaveLength(2)

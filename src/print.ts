@@ -1,9 +1,11 @@
 import { KlapApiError } from '@klappay/node'
+import { chargeMinAmount } from '@klappay/types'
 import type {
   Charge,
   CheckChargeResponse,
   ConfirmationProgress,
   EscrowSafeTransaction,
+  SelfSettlement,
   Webhook,
   WebhookDelivery,
   WebhookListItem,
@@ -29,10 +31,12 @@ export function printCharge(charge: Charge): void {
   console.log(`  status:            ${charge.status}`)
   console.log(`  settlementStatus:  ${charge.settlementStatus ?? 'null'}`)
   console.log(`  amount:            ${charge.amount}`)
+  console.log(`  requestedAmount:   ${charge.requestedAmount ?? 'null'}`)
   console.log(`  amountReceived:    ${charge.amountReceived ?? 'null'}`)
   console.log(
     `  fee:               ${charge.feeAmount} (${charge.feePercent}%, paid by ${charge.feePayer})`,
   )
+  console.log(`  gasFee:            ${charge.gasFeeAmount}`)
   console.log(`  merchantAmount:    ${charge.merchantAmount}`)
   console.log(`  acceptedPayments:  ${accepted}`)
   console.log(`  paidWith:          ${paidWith || 'none yet'}`)
@@ -42,6 +46,24 @@ export function printCharge(charge: Charge): void {
     console.log(`  checkoutUrl:       ${pc.underline(pc.cyan(charge.checkoutUrl))}`)
   }
   for (const line of formatEscrow(charge.escrow)) console.log(line)
+  for (const line of formatSelfSettlement(charge.selfSettlement)) console.log(line)
+}
+
+export function formatSelfSettlement(selfSettlement: SelfSettlement | undefined): string[] {
+  if (!selfSettlement) return []
+  const pairs = selfSettlement.pairs.map((p) => `${p.token}:${p.network}`).join(', ')
+  const recipients = selfSettlement.recipients.map(
+    (r) => `      ${r.address} (${r.percentAllocation}%)`,
+  )
+  return [
+    '  selfSettlement:',
+    `    splitAddress:           ${selfSettlement.splitAddress}`,
+    `    pairs:                  ${pairs}`,
+    `    distributorFeePercent:  ${selfSettlement.distributorFeePercent}`,
+    `    salt:                   ${selfSettlement.salt}`,
+    '    recipients:',
+    ...recipients,
+  ]
 }
 
 export function formatEscrow(escrow: Charge['escrow']): string[] {
@@ -162,7 +184,17 @@ export function printDeliveryResult(event: string, result: DeliveryResult): void
   }
 }
 
+function formatMinAmount(...args: Parameters<typeof chargeMinAmount>): string {
+  return chargeMinAmount(...args).toFixed(2)
+}
+
 const API_ERROR_HINTS: Partial<Record<string, string>> = {
+  amount_below_minimum: `Minimum --amount: ${formatMinAmount('live', ['base'])} live, ${formatMinAmount('live', ['ethereum'])} live on ethereum, ${formatMinAmount('test', ['base'])} test.`,
+  gas_quote_unavailable: 'Gas prices could not be read right now — safe to retry.',
+  recipient_transfer_restricted:
+    'A token issuer blocks an address this charge pays on those pairs — drop them from --accept.',
+  escrow_release_not_covered:
+    'The escrow balance does not cover the gas to release and pay out at current prices, and nothing was sent. `klap charges refund` has no such check.',
   escrow_invalid_signature:
     'The escrow balance may have changed since you prepared — run prepare-release/prepare-refund again and re-sign.',
   escrow_safe_mismatch:
