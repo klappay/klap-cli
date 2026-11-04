@@ -84,7 +84,7 @@ type CheckOptions = {
 
 type FlagIssue = { path: (string | number)[]; message: string }
 
-function describeFlagIssues(
+export function describeFlagIssues(
   issues: FlagIssue[],
   flags: Record<string, string>,
   fallback: string,

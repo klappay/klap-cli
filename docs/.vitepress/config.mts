@@ -37,6 +37,7 @@ export default defineConfig({
         items: [
           { text: 'login / logout', link: '/login' },
           { text: 'charges', link: '/charges' },
+          { text: 'recipients', link: '/recipients' },
           { text: 'sandbox', link: '/sandbox' },
           { text: 'listen', link: '/listen' },
           { text: 'logs', link: '/logs' },

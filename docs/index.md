@@ -23,6 +23,9 @@ features:
   - title: charges
     details: Create a charge from the terminal, get back a clickable checkoutUrl, watch it live with a confirmation progress bar, and list or re-check charges on-chain — no dashboard round-trip.
     link: /charges
+  - title: recipients
+    details: List your split recipients and see what each token issuer's contract says about their addresses, per token and network.
+    link: /recipients
   - title: sandbox
     details: Simulate any charge lifecycle event — confirmed, partially paid, overpaid, expired, settled — with no real funds involved.
     link: /sandbox

@@ -103,7 +103,8 @@ environment, so you're never uncertain which one you're looking at.
   retry.
 - **`422 recipient_transfer_restricted`** — a token issuer blocks an
   address this charge pays from receiving on an accepted pair; the
-  message lists the pairs. Drop them from `--accept`.
+  message lists the pairs. Drop them from `--accept`, and see
+  [`klap recipients transferability`](/recipients#klap-recipients-transferability).
 
 `ethereum` is isolated: a charge accepting it can take both of its
 tokens but no other network, or the API answers `400 validation_error`.

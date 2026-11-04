@@ -127,6 +127,7 @@ can pipe straight into your own tests. See [Fixtures](/fixtures).
 
 - [Login / logout](/login) — credential storage, environment auto-detection
 - [Charges](/charges) — every flag, in depth
+- [Recipients](/recipients) — listing split recipients, checking issuer restrictions
 - [Sandbox](/sandbox) — simulating charge events
 - [Listen](/listen) — how `klap listen` works, and why it isn't a tunnel
 - [Logs](/logs) — timelines and live tailing

@@ -6,6 +6,7 @@ import { registerListen } from './commands/listen'
 import { registerLogin } from './commands/login'
 import { registerLogout } from './commands/logout'
 import { registerLogs } from './commands/logs'
+import { registerRecipients } from './commands/recipients'
 import { registerSandbox } from './commands/sandbox'
 import { registerWebhooks } from './commands/webhooks'
 
@@ -16,6 +17,7 @@ program.name('klap').description('Official CLI for the Klap Core API').version(v
 registerLogin(program)
 registerLogout(program)
 registerCharges(program)
+registerRecipients(program)
 registerSandbox(program)
 registerListen(program)
 registerLogs(program)

@@ -5,7 +5,10 @@ import type {
   CheckChargeResponse,
   ConfirmationProgress,
   EscrowSafeTransaction,
+  Recipient,
+  RecipientTransferability,
   SelfSettlement,
+  TransferRestrictionStatus,
   Webhook,
   WebhookDelivery,
   WebhookListItem,
@@ -100,6 +103,29 @@ export function formatChargeRow(charge: Charge): string {
   return `${charge.id}  ${charge.status.padEnd(14)}  ${String(charge.amount).padStart(10)} ${charge.currency}  ${charge.createdAt}`
 }
 
+export function formatRecipientRow(recipient: Recipient): string {
+  const payout = recipient.payout ? '  [payout]' : ''
+  return `${recipient.id}  ${recipient.address}  ${recipient.label ?? '-'}${payout}`
+}
+
+function formatRestrictionStatus(status: TransferRestrictionStatus): string {
+  const padded = status.padEnd(10)
+  return status === 'restricted' ? pc.red(padded) : padded
+}
+
+export function formatTransferability(report: RecipientTransferability): string[] {
+  const header = [pc.bold(report.recipientId), `  address:  ${report.address}`]
+  if (report.pairs.length === 0) return [...header, '  pairs:    none reported for this address']
+  return [
+    ...header,
+    '  pairs:',
+    ...report.pairs.map(
+      (pair) =>
+        `    ${`${pair.token}:${pair.network}`.padEnd(20)}  receive: ${formatRestrictionStatus(pair.receive)}  send: ${formatRestrictionStatus(pair.send)}`,
+    ),
+  ]
+}
+
 type PayerEvidence = Pick<
   CheckChargeResponse,
   'transactionSender' | 'tokenSenders' | 'userOperationSenders'
@@ -192,7 +218,7 @@ const API_ERROR_HINTS: Partial<Record<string, string>> = {
   amount_below_minimum: `Minimum --amount: ${formatMinAmount('live', ['base'])} live, ${formatMinAmount('live', ['ethereum'])} live on ethereum, ${formatMinAmount('test', ['base'])} test.`,
   gas_quote_unavailable: 'Gas prices could not be read right now — safe to retry.',
   recipient_transfer_restricted:
-    'A token issuer blocks an address this charge pays on those pairs — drop them from --accept.',
+    'A token issuer blocks an address this charge pays on those pairs — drop them from --accept, or inspect a recipient with `klap recipients transferability <id>`.',
   escrow_release_not_covered:
     'The escrow balance does not cover the gas to release and pay out at current prices, and nothing was sent. `klap charges refund` has no such check.',
   escrow_invalid_signature:

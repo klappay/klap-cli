@@ -9,7 +9,9 @@ import {
   formatEscrow,
   formatEscrowSafeTransaction,
   formatPayerEvidence,
+  formatRecipientRow,
   formatSelfSettlement,
+  formatTransferability,
   printCharge,
 } from './print'
 
@@ -210,6 +212,44 @@ describe('formatSelfSettlement', () => {
     expect(lines).toContain('USDC:base')
     expect(lines).toContain('0xsalt')
     expect(lines).toContain('0xmerchant (99%)')
+  })
+})
+
+describe('formatRecipientRow', () => {
+  const recipient = {
+    id: 'rc_1',
+    environment: 'test',
+    address: '0xabc',
+    label: null,
+    payout: false,
+    createdAt: '2026-11-04T00:00:00.000Z',
+  } as const
+
+  it('shows a dash for a missing label and no payout marker', () => {
+    expect(formatRecipientRow(recipient)).toBe('rc_1  0xabc  -')
+  })
+
+  it('shows the label and marks a payout-eligible recipient', () => {
+    expect(formatRecipientRow({ ...recipient, label: 'supplier', payout: true })).toBe(
+      'rc_1  0xabc  supplier  [payout]',
+    )
+  })
+})
+
+describe('formatTransferability', () => {
+  it('reports each direction of a pair separately', () => {
+    const lines = formatTransferability({
+      recipientId: 'rc_1',
+      address: '0xabc',
+      pairs: [{ token: 'USDT', network: 'base', receive: 'allowed', send: 'restricted' }],
+    })
+    const row = lines.find((line) => line.includes('USDT:base'))
+    expect(row).toMatch(/receive: allowed\s+send: .*restricted/)
+  })
+
+  it('says so instead of printing an empty table, as for a TRON address', () => {
+    const lines = formatTransferability({ recipientId: 'rc_1', address: 'T123', pairs: [] })
+    expect(lines.join('\n')).toContain('none reported')
   })
 })
 
