@@ -4,6 +4,7 @@ import { type WebhookPayload, WebhookPayloadSchema } from '@klappay/types'
 export type RelayEvent =
   | { type: 'session'; secret: string }
   | { type: 'webhook'; payload: WebhookPayload }
+  | { type: 'unrecognized'; event: string }
 
 export function extractChargeId(data: unknown): string | undefined {
   if (typeof data === 'object' && data !== null && 'id' in data && typeof data.id === 'string') {
@@ -23,6 +24,24 @@ export function parseSessionSecret(data: unknown): string {
   throw new Error(`Relay sent a malformed session event: ${JSON.stringify(data)}`)
 }
 
+function extractEventName(data: unknown): string {
+  if (
+    typeof data === 'object' &&
+    data !== null &&
+    'event' in data &&
+    typeof data.event === 'string'
+  ) {
+    return data.event
+  }
+  return 'unknown'
+}
+
+export function parseRelayWebhook(data: unknown): RelayEvent {
+  const parsed = WebhookPayloadSchema.safeParse(data)
+  if (parsed.success) return { type: 'webhook', payload: parsed.data }
+  return { type: 'unrecognized', event: extractEventName(data) }
+}
+
 export async function* connectToRelay(
   baseUrl: string,
   apiKey: string,
@@ -31,7 +50,6 @@ export async function* connectToRelay(
   const events = streamSSEEvents<unknown>({ baseUrl, apiKey }, '/v1/webhooks/listen', signal)
   for await (const { event, data } of events) {
     if (event === 'session') yield { type: 'session', secret: parseSessionSecret(data) }
-    else if (event === 'webhook')
-      yield { type: 'webhook', payload: WebhookPayloadSchema.parse(data) }
+    else if (event === 'webhook') yield parseRelayWebhook(data)
   }
 }

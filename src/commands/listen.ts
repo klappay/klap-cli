@@ -3,7 +3,13 @@ import pc from 'picocolors'
 import { resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
 import { runUntilInterrupted } from '../interrupt'
-import { printDeliveryResult, printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
+import {
+  printDeliveryResult,
+  printEnvironmentBanner,
+  printRelayEvent,
+  printUnrecognizedEvent,
+  runCommand,
+} from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
 import { deliverWebhook } from '../webhook-delivery'
 
@@ -39,6 +45,11 @@ export function registerListen(program: Command): void {
                   : 'Listening for events',
               )
               if (options.forwardTo) console.log(pc.dim(`Signing secret: ${secret}`))
+              continue
+            }
+
+            if (evt.type === 'unrecognized') {
+              printUnrecognizedEvent(evt.event)
               continue
             }
 

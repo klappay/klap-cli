@@ -12,6 +12,7 @@ import {
   formatRecipientRow,
   formatSelfSettlement,
   formatTransferability,
+  formatUnrecognizedEvent,
   printCharge,
 } from './print'
 
@@ -250,6 +251,14 @@ describe('formatTransferability', () => {
   it('says so instead of printing an empty table, as for a TRON address', () => {
     const lines = formatTransferability({ recipientId: 'rc_1', address: 'T123', pairs: [] })
     expect(lines.join('\n')).toContain('none reported')
+  })
+})
+
+describe('formatUnrecognizedEvent', () => {
+  it('names the skipped event and how to get it', () => {
+    const line = formatUnrecognizedEvent('charge.from_the_future')
+    expect(line).toContain('"charge.from_the_future"')
+    expect(line).toContain('Update @klappay/cli')
   })
 })
 

@@ -103,6 +103,17 @@ from "one charge" to "every event for this org." Combine it with
 [Sandbox](/sandbox) to drive events on demand instead of waiting for a
 real payment.
 
+## Events this version doesn't recognize
+
+An event newer than your installed CLI doesn't stop the connection. It's
+skipped, not printed or forwarded, with a warning on stderr naming it:
+
+```
+Skipped event "charge.some_new_event": this version of the CLI doesn't recognize it. Update @klappay/cli to see it.
+```
+
+`klap logs --tail` behaves the same way.
+
 ## Environment scoping
 
 Charge events (the `payments` category — `charge.confirmed`, etc.) are

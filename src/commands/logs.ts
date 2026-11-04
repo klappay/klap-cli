@@ -2,7 +2,12 @@ import type { Command } from 'commander'
 import { requireEnvClient, resolveApiKey } from '../client'
 import { ENV_FLAG_DESCRIPTION, parseCliEnvironment, requireConfig } from '../config'
 import { runUntilInterrupted } from '../interrupt'
-import { printEnvironmentBanner, printRelayEvent, runCommand } from '../print'
+import {
+  printEnvironmentBanner,
+  printRelayEvent,
+  printUnrecognizedEvent,
+  runCommand,
+} from '../print'
 import { connectToRelay, extractChargeId } from '../relay'
 
 export function registerLogs(program: Command): void {
@@ -34,7 +39,11 @@ export function registerLogs(program: Command): void {
 
         await runUntilInterrupted(async (signal) => {
           for await (const evt of connectToRelay(config.baseUrl, resolved.key, signal)) {
-            if (evt.type !== 'webhook') continue
+            if (evt.type === 'session') continue
+            if (evt.type === 'unrecognized') {
+              printUnrecognizedEvent(evt.event)
+              continue
+            }
             const chargeId = extractChargeId(evt.payload.data)
             if (options.charge && chargeId !== options.charge) continue
             printRelayEvent(evt.payload, chargeId)

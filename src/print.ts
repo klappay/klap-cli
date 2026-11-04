@@ -202,6 +202,14 @@ export function printRelayEvent(payload: WebhookPayload, chargeId: string | unde
   console.log(`${payload.createdAt}  ${payload.event}  ${chargeId ?? '-'}`)
 }
 
+export function formatUnrecognizedEvent(event: string): string {
+  return `Skipped event "${event}": this version of the CLI doesn't recognize it. Update @klappay/cli to see it.`
+}
+
+export function printUnrecognizedEvent(event: string): void {
+  console.error(pc.yellow(formatUnrecognizedEvent(event)))
+}
+
 export function printDeliveryResult(event: string, result: DeliveryResult): void {
   if ('error' in result) {
     console.log(`${pc.red('-->')} ${event} [failed] ${result.error}`)
