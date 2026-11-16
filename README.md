@@ -8,6 +8,8 @@ touching real funds, and forward real-time webhooks to your own
 `localhost` with `klap listen` — no tunnel, no public URL, nothing to
 deploy.
 
+Part of [Klap](https://klappay.com), the non-custodial crypto payments API.
+
 Built on top of [`@klappay/node`](https://www.npmjs.com/package/@klappay/node) — every command is a thin
 wrapper over the same official client, so the CLI never has a second
 implementation of anything the SDK already does correctly.
