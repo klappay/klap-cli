@@ -85,7 +85,7 @@ generated when you connect and **never persisted** — different from the
 real secret behind any webhook you've registered with
 `POST /v1/webhooks`. With `--forward-to`, `klap listen` signs every
 forwarded payload with it using the exact same scheme a real webhook
-delivery uses: `X-Klap-Signature: t=<unix-seconds>,v1=<hex-encoded
+delivery uses: `X-Klappay-Signature: t=<unix-seconds>,v1=<hex-encoded
 HMAC-SHA256 of "{timestamp}.{raw body}">`. Your handler code doesn't
 need a special "test mode" branch — the same signature verification you
 ship to production works unchanged while testing locally. Without

@@ -113,8 +113,8 @@ Signs a realistic webhook payload and delivers it straight to a local URL
 — **no Core involved at all**, no charge, no registered webhook, no
 login (unless you use `--charge`, see below). From your handler's
 point of view it's indistinguishable from a real delivery: same
-`X-Klap-Signature: t=<unix-seconds>,v1=<hex HMAC-SHA256>` header, same
-`X-Klap-Event`/`X-Klap-Delivery` headers, same JSON shape. Use it to test
+`X-Klappay-Signature: t=<unix-seconds>,v1=<hex HMAC-SHA256>` header, same
+`X-Klappay-Event`/`X-Klappay-Delivery` headers, same JSON shape. Use it to test
 your handler's signature verification and parsing logic in isolation,
 on demand, without waiting for anything real to happen.
 

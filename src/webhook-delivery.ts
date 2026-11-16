@@ -23,9 +23,9 @@ export async function deliverWebhook(
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'X-Klap-Signature': signWebhookPayload(body, secret),
-        'X-Klap-Event': payload.event,
-        'X-Klap-Delivery': payload.id,
+        'X-Klappay-Signature': signWebhookPayload(body, secret),
+        'X-Klappay-Event': payload.event,
+        'X-Klappay-Delivery': payload.id,
       },
       body,
       signal: AbortSignal.timeout(DELIVERY_TIMEOUT_MS),
