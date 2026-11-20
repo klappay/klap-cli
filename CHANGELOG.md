@@ -1,5 +1,11 @@
 # @klappay/cli
 
+## 1.7.1
+
+### Patch Changes
+
+- 126c88e: Forwarded and test webhooks now use the same header names as real Klap deliveries: `X-Klappay-Signature`, `X-Klappay-Event` and `X-Klappay-Delivery` (they were sent as `X-Klap-*`, so handlers written against the docs failed verification locally).
+
 ## 1.7.0
 
 ### Minor Changes
